@@ -47,7 +47,7 @@ def get_output_path() -> Path:
         raise ValueError('OUTPUTS_PATH is not set in the .env file.')
     return Path(path)
 
-def get_inputs_path() -> Path:
+def get_input_path() -> Path:
     """
     Fetches the data path 'INPUTS_PATH' from the .env file.
     Raises a ValueError if it is not defined in the .env file.

@@ -2,7 +2,7 @@ import pandas as pd
 
 from typing import Set, List
 
-from get_env import get_base_path
+from get_env import get_input_path, get_output_path
 from handle_csv import read_csv_to_pandas_dataframe, save_pandas_dataframe_to_csv, get_all_csv_files_in_directory
 from convert_timestamps import convert_timestamps_from_miliseconds_to_localized_datetime_srs, convert_timestamps_from_localized_datetime_to_miliseconds_srs
 
@@ -101,39 +101,34 @@ def remove_columns(df: pd.DataFrame, columns: List[str]) -> pd.DataFrame:
 
 
 if __name__ == '__main__':
-    base_path = get_base_path()
+    database_input_file = 'synchronized_merged_selected_annotated.csv'
+    database_input_file_path = get_input_path() / 'Synchronized_annotated' / database_input_file
+    database_output_file = 'synchronized_merged_selected_annotated_filtered.csv'
+    database_output_file_path = get_output_path() / database_output_file
 
-    # Annotation, single file
+    # Annotations
     """
     classes = {'airing', 'preparing for bed', 'sleeping', 'getting up', 'working out', 
         'preparing breakfast', 'eating breakfast', 'preparing dinner', 'eating dinner', 
         'preparing supper', 'eating supper', 'preparing a drink', 'working', 'relaxing', 
         'leaving home', 'entering home', 'preparing a meal', 'eating a meal'}
     transition_activities = {'getting up', 'leaving home', 'entering home', 'preparing for bed', 'airing'}
-
-    # Adjust before running
-    dataset_path = base_path / 'Dataset Transition Activities' 
-    dataset_file = dataset_path / 'Transition Activities.csv'
-    new_dataset_file = dataset_path / 'Transition Activities 2.csv'
-    activities_to_filter_out = classes - transition_activities
-
-    df = read_csv_to_pandas_dataframe(dataset_file)
-    df = filter_out_rows_containing_annotations(df, activities_to_filter_out)
-    save_pandas_dataframe_to_csv(df, new_dataset_file)
     """
 
-    # Filter file
-    dataset_path = base_path / 'Synchronized' 
-    dataset_file = dataset_path / 'synchronized_merged.csv'
-    new_dataset_file = dataset_path / 'synchronized_merged_selected.csv'
+    # Adjust before running
+    df = read_csv_to_pandas_dataframe(database_input_file_path)
+    df = remove_rows_with_annotation(df, 'other')
+    save_pandas_dataframe_to_csv(df, database_output_file_path)
 
+    # Filter file
+    """
     df = read_csv_to_pandas_dataframe(dataset_file)
     columns = ['d1 hygrometer temperature', 'd1 motion_magnitude mag', 'd1 thermometer objectTemperature',
        'd2 hygrometer temperature', 'd2 motion_magnitude mag', 'd2 thermometer objectTemperature',
        'd3 hygrometer temperature', 'd3 motion_magnitude mag', 'd3 thermometer objectTemperature']
     df = remove_columns(df, columns)
     save_pandas_dataframe_to_csv(df, new_dataset_file)
-
+    """
     # Dataset
     """
     files = get_all_csv_files_in_directory(base_path / 'some_dir')
