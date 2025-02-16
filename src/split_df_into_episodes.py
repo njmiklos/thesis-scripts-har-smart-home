@@ -1,93 +1,76 @@
 import pandas as pd
-
 from typing import List
 from pathlib import Path
 
-from get_env import get_base_path
+from get_env import get_input_path, get_output_path, get_annotations_file_path
 from handle_csv import read_csv_to_pandas_dataframe, save_pandas_dataframe_to_csv
-from convert_timestamps import convert_timestamps_from_miliseconds_to_localized_datetime, convert_timestamps_from_localized_datetime_to_miliseconds
+from filter_df import filter_by_timestamp
 
 
-def check_if_new_episode(row: pd.Series, prev_row: pd.Series, max_time_diff: pd.Timedelta) -> bool:
+def split_into_annotated_episodes(df: pd.DataFrame, episodes_df: pd.DataFrame) -> List[pd.DataFrame]:
     """
-    Checks if a new episode should start based on the time gap or annotation change.
-
-    Args:
-        row (pd.Series): Current row of the DataFrame.
-        prev_row (pd.Series): Previous row of the DataFrame.
-        max_time_diff (pd.Timedelta): The maximum allowed time difference between consecutive samples to stay in the same episode.
-
-    Returns:
-        bool: True if a new episode should start, False if it should not.
-    """
-    if prev_row is not None:
-        time_diff = row['time'] - prev_row['time']
-        if (row['annotation'] != prev_row['annotation']) or (time_diff > max_time_diff):
-            return True
-    
-    return False
-
-def find_episodes(df: pd.DataFrame, sampling_rate_in_secs: int) -> List[pd.DataFrame]:
-    """
-    Identifies and splits the DataFrame into episodes based on time gaps or annotation changes.
+    Splits sensor data into episodes based on the list of the annotated episodes.
 
     Args:
         df (pd.DataFrame): The DataFrame containing the event data.
-        sampling_rate_in_secs (int): The maximum allowed time difference (in seconds) between consecutive samples to stay in the same episode.
+        episodes_df (pd.DataFrame): The DataFrame containing annotated episodes.
 
     Returns:
-        List[pd.DataFrame]: A list of DataFrames, each representing a separate episode.
+        List[Tuple[str, pd.DataFrame]]: List of tuples (annotation_label, episode_df).
     """
-    max_time_diff = pd.Timedelta(seconds=sampling_rate_in_secs)
-
     episodes = []
-    current_episode = []
-    prev_row = None
 
-    for _, row in df.iterrows():
-        if check_if_new_episode(row, prev_row, max_time_diff):
-            if current_episode:
-                episodes.append(pd.DataFrame(current_episode))
-            current_episode = []
+    df['time'] = pd.to_datetime(df['time'], unit='ms', utc=True).view('int64') // 10**6
+    annotations_df['start'] = pd.to_datetime(annotations_df['start'], unit='ms', utc=True).view('int64') // 10**6
+    annotations_df['end'] = pd.to_datetime(annotations_df['end'], unit='ms', utc=True).view('int64') // 10**6
 
-        current_episode.append(row)
-        prev_row = row
+    for _, row in annotations_df.iterrows():
+        start_time = row['start']
+        end_time = row['end']
+        annotation_label = row['annotation']
 
-    if current_episode:
-        episodes.append(pd.DataFrame(current_episode))
-    
+        episode_df = filter_by_timestamp(df, start_time, end_time)
+        if not episode_df.empty:
+            episode_df['annotation'] = annotation_label
+            episodes.append((annotation_label, episode_df))
+
     return episodes
 
-def save_episodes(episodes: List[pd.DataFrame], output_path: Path) -> None:
+def save_annotated_episodes(episodes: List[pd.DataFrame], output_path: Path) -> None:
     """
-    Saves each episode in the list to a separate CSV file.
+    Saves each annotated episode in the list to a separate CSV file with a timestamp in ms UTC Europe/Berlin.
 
     Args:
-        episodes (List[pd.DataFrame]): A list of DataFrames, each representing an episode.
+        episodes (List[Tuple[str, pd.DataFrame]]): A list of tuples containing the annotation and DataFrame.
         output_path (Path): The directory where the CSV files will be saved.
 
     Returns:
         None
     """
-    for i, episode in enumerate(episodes):
-        annotation_name = episode['annotation'].iloc[0].replace(' ', '_')
-        filename = f"ep_{i + 1}_{annotation_name}.csv"
+    for i, (annotation_label, episode) in enumerate(episodes):
+        berlin_time = pd.to_datetime(episode['time'], unit='ms', utc=True).dt.tz_convert('Europe/Berlin')
+        episode['time'] = berlin_time.view('int64') // 10**6
 
-        episode = convert_timestamps_from_localized_datetime_to_miliseconds(episode, 'time')
+        annotation_name = str(annotation_label).replace(' ', '_')
+        filename = f'annotated_ep_{i + 1}_{annotation_name}.csv'
 
         save_pandas_dataframe_to_csv(episode, output_path / filename)
-        print(f"Saved {filename}")
+        print(f'Saved {filename}')
 
 
 if __name__ == '__main__':
-    base_path = get_base_path()
-    dataset_path = base_path / 'Dataset Transition Activities'
-    dataset_file = dataset_path / 'Transition Activities.csv'
-    sampling_rate_in_secs = 10
+    # Paths
+    annotated_episodes_path = get_annotations_file_path()
+    input_file_path = 'synchronized_merged_selected_annotated_filtered.csv'
+    input_dataset_path = get_input_path() / input_file_path
+    output_path = get_output_path()
 
-    df = read_csv_to_pandas_dataframe(dataset_file)
-    df = convert_timestamps_from_miliseconds_to_localized_datetime(df, 'time')
+    # Read datasets
+    df = read_csv_to_pandas_dataframe(input_dataset_path)
+    annotations_df = read_csv_to_pandas_dataframe(annotated_episodes_path)
 
-    episodes = find_episodes(df, sampling_rate_in_secs)
+    # Split into annotated episodes
+    annotated_episodes = split_into_annotated_episodes(df, annotations_df)
 
-    save_episodes(episodes, dataset_path)
+    # Save episodes
+    save_annotated_episodes(annotated_episodes, output_path)

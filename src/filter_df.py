@@ -3,8 +3,9 @@ import pandas as pd
 from typing import Set, List
 
 from get_env import get_input_path, get_output_path
-from handle_csv import read_csv_to_pandas_dataframe, save_pandas_dataframe_to_csv, get_all_csv_files_in_directory
-from convert_timestamps import convert_timestamps_from_miliseconds_to_localized_datetime_srs, convert_timestamps_from_localized_datetime_to_miliseconds_srs
+from handle_csv import read_csv_to_pandas_dataframe, save_pandas_dataframe_to_csv
+from convert_timestamps import (convert_timestamps_from_miliseconds_to_localized_datetime_srs, 
+                            convert_timestamps_from_localized_datetime_to_miliseconds_srs)
 
 
 def filter_by_date(df: pd.DataFrame, day: str) -> pd.DataFrame:
@@ -40,6 +41,21 @@ def filter_by_time_range(df: pd.DataFrame, start: str, end: str) -> pd.DataFrame
         (df['time'].dt.time <= pd.to_datetime(end).time())]
     df['time'] = convert_timestamps_from_localized_datetime_to_miliseconds_srs(df['time'])
     return df
+
+def filter_by_timestamp(df: pd.DataFrame, start: int, end: int) -> pd.DataFrame:
+    """
+    Returns a DataFrame containing only rows within the specified timestamp range.
+
+    Args:
+        df (pd.DataFrame): The input DataFrame containing the data.
+        start (int): The start time in milliseconds.
+        end (int): The end time in milliseconds.
+
+    Returns:
+        pd.DataFrame: A DataFrame filtered to include only rows within the specified time range.
+    """
+    filtered_df = df[(df['time'] >= start) & (df['time'] <= end)]
+    return filtered_df
 
 def remove_rows_with_annotation(df: pd.DataFrame, annotation: str) -> pd.DataFrame:
     """
