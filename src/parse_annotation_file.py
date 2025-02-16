@@ -8,7 +8,7 @@ In the file, every episode is a row. It must include the following columns:
 """
 import pandas as pd
 
-from get_env import get_annnotations_file_path
+from get_env import get_annotations_file_path
 from handle_csv import read_csv_to_pandas_dataframe
 
 
@@ -74,7 +74,7 @@ def parse_annotations(annotations: pd.DataFrame) -> None:
         raise ValueError(f"Invalid annotations found: {invalid_annotations}")
 
 if __name__ == '__main__':
-    path_annotation_file = get_annnotations_file_path
+    path_annotation_file = get_annotations_file_path
 
     annotations = read_csv_to_pandas_dataframe(path_annotation_file)
     parse_timestamps(annotations)

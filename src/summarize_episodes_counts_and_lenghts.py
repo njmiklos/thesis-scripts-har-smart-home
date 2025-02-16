@@ -1,7 +1,7 @@
 import pandas as pd
 from typing import List
 
-from get_env import get_annnotations_file_path, get_output_path
+from get_env import get_annotations_file_path, get_output_path
 from handle_csv import read_csv_to_pandas_dataframe, save_pandas_dataframe_to_csv
 
 
@@ -186,7 +186,7 @@ def generate_summary_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
 if __name__ == '__main__':
     # Get file paths
-    annotation_file_path = get_annnotations_file_path()
+    annotation_file_path = get_annotations_file_path()
     output_file_name = 'summary_episode_times_and_occurances.csv'
     output_file_path = get_output_path() / output_file_name
 
