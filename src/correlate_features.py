@@ -1,7 +1,7 @@
 from handle_csv import save_pandas_dataframe_to_csv, read_csv_to_pandas_dataframe
 from get_env import get_base_path
 
-from merge_data import merge_synchronized_files_into_single_df
+from merge_data_dfs import merge_synchronized_files_into_single_df
 from visualize_data import generate_heatmap
 
 

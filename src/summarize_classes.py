@@ -78,8 +78,9 @@ def prefix_column_names_with_device_sensor_function(df: pd.DataFrame, file_path:
 
 def process_file(file_path: Path) -> pd.DataFrame:
     """
-    Processes a CSV file by reading its contents, grouping values by annotation class,
-    and renaming columns with device and sensor information.
+    Processes a dataset CSV file to provide a summary of all classes as a DataFrame.
+    Every rows is a class, and columns show a mean and a standard deviation of every
+    measurement in the class.
 
     Args:
         file_path (Path): The path to the CSV file.
