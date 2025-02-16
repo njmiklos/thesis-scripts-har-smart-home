@@ -61,7 +61,7 @@ def get_input_path() -> Path:
         raise ValueError('INPUTS_PATH is not set in the .env file.')
     return Path(path)
 
-def get_annnotations_file_path() -> Path:
+def get_annotations_file_path() -> Path:
     """
     Fetches the data path 'ANNOTATIONS_FILE_PATH' from the .env file.
     Raises a ValueError if it is not defined in the .env file.
