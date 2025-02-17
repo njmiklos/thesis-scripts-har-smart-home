@@ -19,18 +19,23 @@ def segment_into_annotated_episodes(dataset_df: pd.DataFrame, annotations_df: pd
     Returns:
         List[pd.DataFrame]: A list of episode DataFrames.
     """
+    unannotated = False
+    if 'annotation' not in dataset_df.columns:
+        dataset_df['annotation'] = None
+        unannotated = True
+
     episodes = []
 
     for _, row in annotations_df.iterrows():
         start_time = row['start']
         end_time = row['end']
+        annotation = row['annotation']
 
-        episode_df = filter_by_timestamp(dataset_df, start_time, end_time)
-
-        print('An episode')
-        print(episode_df)
+        episode_df = filter_by_timestamp(dataset_df, start_time, end_time).copy()
 
         if not episode_df.empty:
+            if unannotated:
+                episode_df.loc[:, 'annotation'] = annotation
             episodes.append(episode_df)
 
     return episodes
