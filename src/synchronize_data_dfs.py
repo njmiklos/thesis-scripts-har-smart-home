@@ -97,7 +97,7 @@ def resample_and_align_data(df: pd.DataFrame, new_index: pd.DatetimeIndex, frequ
     if magnitude_data:
         df_new = df_new.fillna(0)
     else:
-        df_new = df_new.bfill().ffill()
+        df_new = df_new.ffill().bfill()
 
     return df_new
 
