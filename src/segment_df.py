@@ -40,6 +40,29 @@ def segment_into_annotated_episodes(dataset_df: pd.DataFrame, annotations_df: pd
 
     return episodes
 
+def get_filename(episode_number: int, episode: pd.DataFrame) -> str:
+    """
+    Generates a descriptive filename for an annotated episode CSV file.
+
+    Args:
+        episode_number (int): The sequential number of the episode.
+        episode (pd.DataFrame): A DataFrame containing episode data, including 'time' (in ms UTC) and 'annotation'.
+
+    Returns:
+        str: The generated filename in the format 'YYYY-MM-DD_ep_<episode_number>_<annotation>.csv'.
+    """
+    if episode.empty:
+        raise ValueError(f'Episode {episode_number} is empty and has no timestamp or annotation.')
+
+    cls = str(episode['annotation'].iloc[0])
+    cls = cls.replace(' ', '_')
+
+    day = pd.to_datetime(episode['time'].iloc[0], unit='ms', utc=True).tz_convert('Europe/Berlin')
+    day_str = day.strftime('%Y-%m-%d')
+
+    filename = f'{day_str}_ep_{episode_number}_{cls}.csv'
+    return filename
+
 def save_annotated_episodes(episodes: List[pd.DataFrame], output_path: Path) -> None:
     """
     Saves each annotated episode in the list to a separate CSV file.
@@ -51,13 +74,15 @@ def save_annotated_episodes(episodes: List[pd.DataFrame], output_path: Path) -> 
     Returns:
         None
     """
-    for i, episode in enumerate(episodes):
-        cls = str(episode['annotation'].iloc[0])
-        cls = cls.replace(' ', '_')
-        filename = f'annotated_ep_{i + 1}_{cls}.csv'
+    output_path.mkdir(parents=True, exist_ok=True)
 
-        save_pandas_dataframe_to_csv(episode, output_path / filename)
-        print(f'Saved {filename}')
+    for i, episode in enumerate(episodes):
+        try:
+            filename = get_filename(i + 1, episode)
+            save_pandas_dataframe_to_csv(episode.copy(), output_path / filename)
+            print(f'Saved {filename}')
+        except Exception as e:
+            print(f'Failed to save episode {i + 1}: {e}')
 
 def segment_df_into_days(df: pd.DataFrame, output_path: Path):
     days = infer_data_collection_days_from_time_column(df['time'])
