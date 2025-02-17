@@ -4,10 +4,11 @@ from pathlib import Path
 
 from get_env import get_input_path, get_output_path, get_annotations_file_path
 from handle_csv import read_csv_to_pandas_dataframe, save_pandas_dataframe_to_csv
-from filter_df import filter_by_timestamp
+from infer_metadata import infer_data_collection_days_from_time_column
+from filter_df import filter_by_timestamp, filter_by_date
 
 
-def split_into_annotated_episodes(dataset_df: pd.DataFrame, annotations_df: pd.DataFrame) -> List[pd.DataFrame]:
+def segment_into_annotated_episodes(dataset_df: pd.DataFrame, annotations_df: pd.DataFrame) -> List[pd.DataFrame]:
     """
     Splits sensor data into episodes based on the list of the annotated episodes.
 
@@ -53,6 +54,15 @@ def save_annotated_episodes(episodes: List[pd.DataFrame], output_path: Path) -> 
         save_pandas_dataframe_to_csv(episode, output_path / filename)
         print(f'Saved {filename}')
 
+def segment_df_into_days(df: pd.DataFrame, output_path: Path):
+    days = infer_data_collection_days_from_time_column(df['time'])
+
+    for day in days:
+        daily_df = filter_by_date(df, day)
+        output_file = f'episode_{day}.csv'
+        output_file_path = output_path / output_file
+        save_pandas_dataframe_to_csv(daily_df, output_file_path)
+
 
 if __name__ == '__main__':
     # Paths
@@ -66,7 +76,7 @@ if __name__ == '__main__':
     annotations_df = read_csv_to_pandas_dataframe(annotated_episodes_path)
 
     # Split into annotated episodes
-    annotated_episodes = split_into_annotated_episodes(dataset_df, annotations_df)
+    annotated_episodes = segment_into_annotated_episodes(dataset_df, annotations_df)
 
     # Save episodes
     save_annotated_episodes(annotated_episodes, output_path)
