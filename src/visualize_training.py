@@ -2,15 +2,7 @@ import pandas as pd
 
 from handle_csv import read_csv_to_pandas_dataframe
 from get_env import get_input_path, get_output_path
-from visualize_data import generate_timeseries_plot_literal_time
-
-
-def visualize_columns(df: pd.DataFrame, output_dir_path):
-    columns = df.columns
-    for column in columns:
-        if column != 'Epoch':
-            title = f'Training_{str(column)}'
-            generate_timeseries_plot_literal_time(df['Epoch'], df[column], title, 'Epoch', str(column), output_dir_path, avg_line=False)
+from visualize_data import generate_comparative_timeseries_plot
 
 
 if __name__ == '__main__':
@@ -23,4 +15,10 @@ if __name__ == '__main__':
 
     training_df = read_csv_to_pandas_dataframe(input_file_path)
 
-    visualize_columns(training_df, output_dir_path)
+    generate_comparative_timeseries_plot(training_df['Epoch'], training_df['Accuracy'], training_df['Validation Accuracy'], 
+                                         'Accuracy', 'Validation Accuracy', 'Model Training - Accuracy Over Time', 'Epoch',
+                                         'Accuracy', output_dir_path)
+
+    generate_comparative_timeseries_plot(training_df['Epoch'], training_df['Loss'], training_df['Validation Loss'], 
+                                         'Loss', 'Validation Loss', 'Model Training - Loss Over Time', 'Epoch',
+                                         'Loss', output_dir_path)
