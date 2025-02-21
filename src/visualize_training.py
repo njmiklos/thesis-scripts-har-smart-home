@@ -16,9 +16,9 @@ if __name__ == '__main__':
     training_df = read_csv_to_pandas_dataframe(input_file_path)
 
     generate_comparative_timeseries_plot(training_df['Epoch'], training_df['Accuracy'], training_df['Validation Accuracy'], 
-                                         'Accuracy', 'Validation Accuracy', 'Model Training - Accuracy Over Time', 'Epoch',
+                                         'Training Accuracy', 'Validation Accuracy', 'Model Training - Accuracy Over Time', 'Epoch',
                                          'Accuracy', output_dir_path)
 
     generate_comparative_timeseries_plot(training_df['Epoch'], training_df['Loss'], training_df['Validation Loss'], 
-                                         'Loss', 'Validation Loss', 'Model Training - Loss Over Time', 'Epoch',
+                                         'Training Loss', 'Validation Loss', 'Model Training - Loss Over Time', 'Epoch',
                                          'Loss', output_dir_path)
