@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
 
@@ -252,14 +253,14 @@ def generate_heatmap(df: pd.DataFrame, output_dir_path: Path, title: str = 'Feat
     Returns:
         bool: True if plot was saved successfully, False otherwise.
     """
-    # Drop non-numeric or unwanted columns like 'time' and 'annotation'
+    # Drop non-numeric or unwanted columns
     cols_to_ignore = ['time', 'annotation']
     df_filtered = df.drop(columns=[col for col in cols_to_ignore if col in df.columns])
 
     # Calculate the correlation matrix
     corr_matrix = df_filtered.corr()
 
-    # Generate the heatmap manually using matplotlib
+    # Generate the heatmap
     plt.figure(figsize=(20, 16))
     plt.title(title.title(), fontsize=20, pad=20)
 
@@ -270,7 +271,7 @@ def generate_heatmap(df: pd.DataFrame, output_dir_path: Path, title: str = 'Feat
     plt.xticks(range(len(corr_matrix.columns)), corr_matrix.columns, rotation=90, fontsize=8)
     plt.yticks(range(len(corr_matrix.columns)), corr_matrix.columns, fontsize=8)
 
-    # Add gridlines for clarity
+    # Add gridlines
     plt.gca().xaxis.tick_bottom()  # Move x-axis labels to bottom
     plt.grid(visible=True, color='gray', linestyle='--', linewidth=0.5)
 
@@ -288,4 +289,56 @@ def generate_heatmap(df: pd.DataFrame, output_dir_path: Path, title: str = 'Feat
         plt.close()
         return False
     
-    
+def generate_confusion_matrix(matrix: np.ndarray, class_names: list[str], output_dir_path: Path) -> bool:
+    """
+    Generate and save a confusion matrix as a PNG image with a white background.
+
+    Args:
+        matrix (np.ndarray): Confusion matrix in percentage form.
+        class_names (list[str]): List of class labels.
+        output_dir_path (Path): Path to save the confusion matrix.
+
+    Returns:
+        bool: True if successfully saved, False otherwise.
+    """
+    # Create figure and axis
+    fig, ax = plt.subplots(figsize=(14, 10))
+
+    # Plot Confusion Matrix
+    cax = ax.matshow(matrix, cmap='Greens', vmin=0, vmax=100)
+
+    # Add color bar
+    plt.colorbar(cax)
+
+    # Add labels for x and y axes
+    ax.set_xticks(range(len(class_names)))
+    ax.set_yticks(range(len(class_names)))
+    ax.set_xticklabels(class_names, rotation=90, fontsize=10)
+    ax.set_yticklabels(class_names, fontsize=10)
+
+    # Format values
+    for i in range(matrix.shape[0]):
+        for j in range(matrix.shape[1]):
+            ax.text(j, i, f'{matrix[i, j]:.1f}%', ha='center', va='center', color='black', fontsize=8)
+
+    plt.xlabel('Predicted Labels', fontsize=16)
+    plt.gca().xaxis.tick_bottom()  # Move x-axis labels to bottom
+
+    plt.ylabel('True Labels', fontsize=16)
+
+    title = 'Confusion Matrix in Percentage'
+    plt.title(title, fontsize=20)
+
+    # Prepare the output path
+    output_file_name = 'confusion_matrix_percentage.png'
+    output_path = output_dir_path / output_file_name
+
+    try:
+        plt.savefig(output_path, format='png', dpi=400, bbox_inches='tight', facecolor='white')
+        plt.close()
+        print(f'Saved confusion matrix to {output_path}')
+        return True
+    except Exception as e:
+        plt.close()
+        print(f'Error saving confusion matrix: {e}')
+        return False
