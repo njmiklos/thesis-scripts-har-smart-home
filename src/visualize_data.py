@@ -171,6 +171,75 @@ def generate_scatter_plot(time_srs: pd.Series, data_srs: pd.Series, plot_title: 
         plt.close()
         return False
 
+def generate_timeseries_plot_literal_time(time_srs: pd.Series, data_srs: pd.Series, plot_title: str, 
+                         time_axis_label: str, value_axis_label: str, output_dir_path: Path, 
+                         color='green', linestyle='-', linewidth=2.0, alpha=0.8, 
+                         marker='o', markersize=5, avg_line=True, avg_line_color='orange', 
+                         avg_line_style='--', avg_line_width=2.0) -> bool:
+    """
+    Generates and saves a time series line plot with markers (dots) at each data point and an optional average line.
+
+    Args:
+        time_srs (pd.Series): The column in the DataFrame with the time to visualize in the plot.
+        data_srs (pd.Series): The column in the DataFrame with the values to visualize.
+        plot_title (str): The title of the plot.
+        time_axis_label (str): Label for the x-axis (time), e.g., 'Time [s]'.
+        value_axis_label (str): Label for the y-axis, e.g., 'Acceleration Magnitude'.
+        output_dir_path (Path): The directory path where the plot image will be saved.
+        color (str, optional): Color of the line plot.
+        linestyle (str, optional): Line style for the plot (e.g., '-', '--', '-.', ':').
+        linewidth (float, optional): Line width for the plot.
+        alpha (float, optional): Transparency level for the line.
+        marker (str, optional): Marker style for the dots (e.g., 'o', 's', 'D', 'x').
+        markersize (int, optional): Size of the markers (dots).
+        avg_line (bool, optional): Whether to plot a horizontal line for the average value.
+        avg_line_color (str, optional): Color of the average line.
+        avg_line_style (str, optional): Style of the average line (e.g., '--', '-.', ':').
+        avg_line_width (float, optional): Width of the average line.
+
+    Returns:
+        bool: True if plot was saved successfully, False otherwise.
+    """
+    value_axis_label = value_axis_label.title()
+
+    # Compute average value
+    avg_value = data_srs.mean()
+
+    # Create line plot with dots
+    plt.figure(figsize=(12, 6))
+    plt.plot(time_srs, data_srs, label=value_axis_label, color=color, linestyle=linestyle, 
+             linewidth=linewidth, alpha=alpha, marker=marker, markersize=markersize)
+
+    # Add an average line
+    if avg_line:
+        plt.axhline(y=avg_value, color=avg_line_color, linestyle=avg_line_style, 
+                    linewidth=avg_line_width, label=f'Avg: {avg_value:.2f}')
+
+    # Add labels and titles
+    time_axis_label = time_axis_label.title()
+    plt.xlabel(time_axis_label)
+    plt.ylabel(value_axis_label)
+
+    plot_title = plot_title.replace('_', ' ').title()
+    plt.title(plot_title)
+    
+    # Additional settings
+    plt.legend()
+    plt.grid(True)
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+
+    # Save the plot
+    plot_filename = f"{plot_title.replace(' ', '_').lower()}_time_series_plot.png"
+    output_path = output_dir_path / plot_filename
+    try:
+        plt.savefig(output_path, format='png', dpi=300)
+        plt.close()
+        return True
+    except Exception as e:
+        plt.close()
+        return False
+    
 def generate_timeseries_plot(time_srs: pd.Series, data_srs: pd.Series, plot_title: str, 
                          time_axis_label: str, value_axis_label: str, output_dir_path: Path, 
                          color='green', linestyle='-', linewidth=2.0, alpha=0.8, 
