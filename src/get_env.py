@@ -101,3 +101,26 @@ def get_database_info() -> Tuple[str, int, str]:
         raise ValueError('DATABASE_NAME is not set in the .env file.')
     
     return (host, port, name)
+
+def get_chat_ac_info() -> Tuple[str, str]:
+    """
+    Fetches the variables necessary for connecting to the API of the online FM.
+
+    Loads environment variables using `dotenv` and retrieves the `CHAT_AC_API_KEY`
+    and `CHAT_AC_ENDPOINT`. Raises a ValueError if any of these are not defined 
+    in the .env file.
+
+    Returns:
+        Tuple[str, str]: A tuple containing the API key and the address of the endpoint.
+    """
+    load_dotenv()
+
+    chat_ac_api_key = os.getenv('CHAT_AC_API_KEY')
+    if not chat_ac_api_key:
+        raise ValueError('CHAT_AC_API_KEY is not set in the .env file.')
+
+    chat_ac_endpoint = os.getenv('CHAT_AC_ENDPOINT')
+    if not chat_ac_endpoint:
+        raise ValueError('CHAT_AC_ENDPOINT is not set in the .env file.')
+    
+    return (chat_ac_api_key, chat_ac_endpoint)
