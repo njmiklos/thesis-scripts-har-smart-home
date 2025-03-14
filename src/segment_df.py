@@ -85,6 +85,16 @@ def save_annotated_episodes(episodes: List[pd.DataFrame], output_path: Path) -> 
             print(f'Failed to save episode {i + 1}: {e}')
 
 def segment_df_into_days(df: pd.DataFrame, output_path: Path):
+    """
+    Saves each day in the dataset to a separate CSV file.
+
+    Args:
+        dataset_df (pd.DataFrame): The DataFrame containing all activity data.
+        output_path (Path): The directory where the CSV files will be saved.
+
+    Returns:
+        None
+    """
     days = infer_data_collection_days_from_time_column(df['time'])
 
     for day in days:
@@ -93,20 +103,53 @@ def segment_df_into_days(df: pd.DataFrame, output_path: Path):
         output_file_path = output_path / output_file
         save_pandas_dataframe_to_csv(daily_df, output_file_path)
 
+def segment_df_into_two_parts(df: pd.DataFrame, proportion: int, output_path: Path):
+    """
+    Splits the DataFrame into two segments based on the specified proportion, and saves them as separate CSV files.
+
+    The first CSV file (dataset_a.csv) will contain the first 'proportion' percent of the rows, 
+    and the second CSV file (dataset_b.csv) will contain the remaining rows.
+
+    Args:
+        df (pd.DataFrame): The DataFrame containing the data to be segmented.
+        proportion (int): The percentage (between 0 and 100) of rows to include in the first CSV file.
+        output_path (Path): The directory where the CSV files will be saved.
+
+    Returns:
+        None
+    """
+    if not (0 < proportion < 100):
+        raise ValueError('Proportion must be between 0 and 100 (exclusive).')
+
+    total_number_rows = len(df)
+    rows_df_a = int(total_number_rows * (proportion / 100))
+
+    df_a = df.iloc[:rows_df_a]
+    df_b = df.iloc[rows_df_a:]
+
+    output_file_a = 'dataset_a.csv'
+    output_file_a_path = output_path / output_file_a
+    output_file_b = 'dataset_b.csv'
+    output_file_b_path = output_path / output_file_b
+
+    save_pandas_dataframe_to_csv(df_a, output_file_a_path)
+    save_pandas_dataframe_to_csv(df_b, output_file_b_path)
+
 
 if __name__ == '__main__':
     # Paths
     annotated_episodes_path = get_annotations_file_path()
-    input_file_path = 'synchronized_merged_selected_annotated_filtered.csv'
+    input_file_path = 'synchronized_merged_selected_annotated.csv'
     input_dataset_path = get_input_path() / input_file_path
     output_path = get_output_path()
 
     # Read datasets
     dataset_df = read_csv_to_pandas_dataframe(input_dataset_path)
-    annotations_df = read_csv_to_pandas_dataframe(annotated_episodes_path)
+    #annotations_df = read_csv_to_pandas_dataframe(annotated_episodes_path)
 
     # Split into annotated episodes
-    annotated_episodes = segment_into_annotated_episodes(dataset_df, annotations_df)
-
+    #annotated_episodes = segment_into_annotated_episodes(dataset_df, annotations_df)
     # Save episodes
-    save_annotated_episodes(annotated_episodes, output_path)
+    #save_annotated_episodes(annotated_episodes, output_path)
+
+    segment_df_into_two_parts(dataset_df, 84, output_path)
