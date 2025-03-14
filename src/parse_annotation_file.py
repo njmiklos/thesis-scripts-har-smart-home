@@ -8,8 +8,8 @@ In the file, every episode is a row. It must include the following columns:
 """
 import pandas as pd
 
-from get_env import get_annotations_file_path
-from handle_csv import read_csv_to_pandas_dataframe
+from get_env import get_annotations_file_path, get_output_path
+from handle_csv import read_csv_to_pandas_dataframe, save_pandas_dataframe_to_csv
 
 
 def parse_timestamps(annotations: pd.DataFrame) -> None:
@@ -73,10 +73,53 @@ def parse_annotations(annotations: pd.DataFrame) -> None:
     if invalid_annotations:
         raise ValueError(f"Invalid annotations found: {invalid_annotations}")
 
+def annotate_gaps(annotations: pd.DataFrame) -> pd.DataFrame:
+    """
+    Annotates as 'other' intervals between annotated activities in the DataFrame that are longer than 00:00:01.
+
+    Args:
+        annotations (pd.DataFrame): The input DataFrame with 'start' and 'end' columns
+        containing timestamps.
+
+    Returns:
+        pd.DataFrame: A new DataFrame including the 'other' intervals.
+    """
+    gaps = []
+
+    for i in range(len(annotations) - 1):
+        current_end = int(annotations.loc[i, 'end'])
+        next_start = int(annotations.loc[i + 1, 'start'])
+
+        if next_start - current_end > 1000:
+            gap_between_episodes = True
+        else:
+            gap_between_episodes = False
+
+        if gap_between_episodes:
+            gaps.append({'start': current_end + 1000,
+                'end': next_start - 1000,
+                'annotation': 'other'
+            })
+
+    if gaps:
+        gaps_df = pd.DataFrame(gaps)
+        annotations = pd.concat([annotations, gaps_df])
+    
+    annotations = annotations.sort_values(by='start').reset_index(drop=True)
+
+    return annotations
+
+
 if __name__ == '__main__':
-    path_annotation_file = get_annotations_file_path
+    path_annotation_file = get_annotations_file_path()
 
     annotations = read_csv_to_pandas_dataframe(path_annotation_file)
     parse_timestamps(annotations)
     check_overlap(annotations)
     parse_annotations(annotations)
+
+    annotations_with_annotated_gaps = annotate_gaps(annotations)
+    file_out = 'annotations_combined_with_annotated_gaps.csv'
+    path_out =  get_output_path() / file_out
+    save_pandas_dataframe_to_csv(annotations_with_annotated_gaps, path_out)
+
