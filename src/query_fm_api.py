@@ -50,130 +50,130 @@ def send_chat_request(api_config: Dict[str, str], prompt: str, user_message: str
         ]
     }
     
-    chat_response = requests.post(
+    system_response = requests.post(
         url=f'{api_config["base_url"]}/chat/completions',
         headers=headers,
         json=data
     )
     
-    return chat_response
+    return system_response
 
-def print_headers(chat_response: requests.Response) -> None:
+def print_headers(system_response: requests.Response) -> None:
     """
     Prints the headers of the API response.
 
     Args:
-        chat_response (requests.Response): The HTTP response object.
+        system_response (requests.Response): The HTTP response object.
     """
-    if chat_response.headers.items():
+    if system_response.headers.items():
         print('Response Headers:')
-        for key, value in chat_response.headers.items():
+        for key, value in system_response.headers.items():
             print(f'- {key}: {value}')
     else:
         print('Response headers empty.')
 
-def get_response_token_usage(chat_response: requests.Response) -> Dict[str, int]:
+def get_request_token_usage(system_response: requests.Response) -> Dict[str, int]:
     """
-    Extracts token usage details from the API response.
+    Extracts token usage details of the last exchange.
 
     Args:
-        chat_response (requests.Response): The HTTP response object.
+        system_response (requests.Response): The HTTP response object.
 
     Returns:
         Dict[str, int]: A dictionary containing token usage details.
     """
-    response_tokens = chat_response.json()['usage']
-    return response_tokens
+    exchange_tokens = system_response.json()['usage']
+    return exchange_tokens
 
-def get_total_token_usage(chat_response: requests.Response) -> Dict[str, int]:
+def get_rate_limits(system_response: requests.Response) -> Dict[str, int]:
     """
-    Extracts token limits and remaining tokens from response headers.
+    Extracts total and remaining rate limits of requests and tokens from response headers.
 
     Args:
-        chat_response (requests.Response): The HTTP response object.
+        system_response (requests.Response): The HTTP response object.
 
     Returns:
         Dict[str, int]: A dictionary containing token limits and remaining counts.
     """
-    total_tokens = {}
-    for key, value in chat_response.headers.items():
+    rate_limits = {}
+    for key, value in system_response.headers.items():
         if 'Limit' in key:
-            total_tokens[key] = int(value)
-    return total_tokens
+            rate_limits[key] = int(value)
+    return rate_limits
 
-def print_usage(chat_response: requests.Response) -> None:
+def print_usage(system_response: requests.Response) -> None:
     """
     Prints the token usage.
 
     Args:
-        chat_response (requests.Response): The HTTP response object.
+        system_response (requests.Response): The HTTP response object.
     """
-    response_tokens = get_response_token_usage(chat_response)
-    total_tokens = get_total_token_usage(chat_response)
+    response_tokens = get_request_token_usage(system_response)
+    total_tokens = get_rate_limits(system_response)
 
-    print('Tokens used for response:')
+    print('Tokens used for request:')
     for key, value in response_tokens.items():
         print(f'- {key}: {value}')
 
-    print('Total tokens:')
+    print('Total rate limits:')
     for key, value in total_tokens.items():
         print(f'- {key}: {value}')
             
-def get_response_txt(chat_response: requests.Response) -> str:
+def get_system_message(system_response: requests.Response) -> str:
     """
-    Extracts the assistant's response text from the API response.
+    Extracts the systems's response text from the API response.
 
     Args:
-        chat_response (requests.Response): The HTTP response object.
+        system_response (requests.Response): The HTTP response object.
 
     Returns:
-        str: The assistant's response message.
+        str: The systems's response message.
     """
-    response_txt = chat_response.json()['choices'][0]['message']['content']
-    return response_txt
+    system_response_text = system_response.json()['choices'][0]['message']['content']
+    return system_response_text
 
-def get_latency(chat_response: requests.Response) -> str:
+def get_latency(system_response: requests.Response) -> str:
     """
     Extracts the API response latency.
 
     Args:
-        chat_response (requests.Response): The HTTP response object.
+        system_response (requests.Response): The HTTP response object.
 
     Returns:
         str: The latency of the response.
     """
-    return str(chat_response.elapsed)
+    return str(system_response.elapsed)
 
-def print_formatted_exchange(message: str, chat_response: requests.Response) -> None:
+def print_formatted_exchange(user_message: str, system_response: requests.Response) -> None:
     """
     Prints the formatted exchange and its relevant details.
 
     Args:
-        message (str): User's input, i.e., message to the chatbot.
-        chat_response (requests.Response): The HTTP response object.
+        user_message (str): User's input, i.e., message to the chatbot.
+        system_response (requests.Response): The HTTP response object.
 
     Raises:
         ValueError: If the response is not OK (non-2xx status code).
     """
-    if chat_response.ok:
-        if chat_response.status_code != 200:
-            print(f'{chat_response.status_code} {chat_response.reason}')
+    if system_response.ok:
+        if system_response.status_code != 200:
+            print(f'{system_response.status_code} {system_response.reason}')
 
-        print(f'User:\n- {message}')
-        print(f'Model:\n- {get_response_txt(chat_response)}' )
-        print(f'Latency: {get_latency(chat_response)}')
-        print_usage(chat_response)
+        print(f'User:\n- {user_message}')
+        print(f'System:\n- {get_system_message(system_response)}' )
+        print(f'Latency: {get_latency(system_response)}')
+        print_usage(system_response)
     else:
-        raise ValueError(f'Cannot access response details, response status code {chat_response.status_code} {chat_response.reason}.')
+        raise ValueError(f'Cannot access response details, response status code {system_response.status_code} {system_response.reason}.')
 
 
 if __name__ == '__main__':
     model = 'meta-llama-3.1-8b-instruct'
     prompt = 'You are a helpful assistant'
-    message = 'How tall is the Eiffel tower?'
+    user_message = 'How tall is the Eiffel tower?'
 
     api_config = get_api_config(model)
 
-    chat_response = send_chat_request(api_config=api_config, prompt=prompt, user_message=message)
+    system_response = send_chat_request(api_config=api_config, prompt=prompt, user_message=user_message)
 
-    print_formatted_exchange(message, chat_response)
+    print_formatted_exchange(user_message, system_response)
