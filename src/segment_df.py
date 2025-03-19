@@ -99,7 +99,7 @@ def segment_df_into_days(df: pd.DataFrame, output_path: Path):
 
     for day in days:
         daily_df = filter_by_date(df, day)
-        output_file = f'episode_{day}.csv'
+        output_file = f'day_{day}.csv'
         output_file_path = output_path / output_file
         save_pandas_dataframe_to_csv(daily_df, output_file_path)
 
@@ -122,6 +122,9 @@ def segment_df_into_two_parts(df: pd.DataFrame, proportion: int, output_path: Pa
         raise ValueError('Proportion must be between 0 and 100 (exclusive).')
 
     total_number_rows = len(df)
+    if total_number_rows == 0:
+        raise ValueError('The DataFrame is empty.')
+    
     rows_df_a = int(total_number_rows * (proportion / 100))
 
     df_a = df.iloc[:rows_df_a]
@@ -135,11 +138,92 @@ def segment_df_into_two_parts(df: pd.DataFrame, proportion: int, output_path: Pa
     save_pandas_dataframe_to_csv(df_a, output_file_a_path)
     save_pandas_dataframe_to_csv(df_b, output_file_b_path)
 
+def get_middle_index(df: pd.DataFrame) -> int:
+    """
+    ! Not tested.
+
+    Returns the index of the sample in the middle of the DataFrame.
+
+    Args:
+        df (pd.DataFrame): The DataFrame containing the data to be segmented.
+
+    Returns:
+        int: The index of the sample in the middle of the DataFrame.
+    """
+    total_number_rows = len(df)
+    if total_number_rows == 0:
+        raise ValueError('The DataFrame is empty.')
+    
+    middle_position = total_number_rows // 2
+    middle_index = df.index[middle_position]    # For non-sequential indices, e.g., when df = pd.DataFrame({'A': [10, 20, 30]}, index=[100, 101, 102])
+
+    return middle_index
+
+def segment_from_row_position_to_row_position(df: pd.DataFrame, start_position: int, end_position: int, output_path: Path, output_filename: str = 'slice.csv') -> None:
+    """
+    ! Not tested.
+
+    Saves into a file a segment of the data between the specified row positions in the DataFrame.
+
+    Args:
+        df (pd.DataFrame): The DataFrame containing the data to be segmented.
+        start_position (int):  The starting row position (inclusive).
+        end_position (int):  The ending row position (exclusive).
+        output_path (Path): The directory where the CSV files will be saved.
+        output_filename (str): The name of the output CSV file. Defaults to 'slice.csv'.
+
+    Returns:
+        None
+    """
+    new_df = df.iloc[start_position : end_position]
+    save_pandas_dataframe_to_csv(new_df, output_path / output_filename)
+
+def segment_into_windows(df: pd.DataFrame, window_size: int, overlap_size: int, output_directory_path: Path, output_filename_prefix: str = 'window'):
+    """
+    ! Not tested.
+
+    Segments a DataFrame into overlapping windows and saves each window as a CSV file.
+
+    Args:
+        df (pd.DataFrame): The input DataFrame containing the data to be segmented.
+        window_size (int): The number of rows in each segmented window.
+        overlap_size (int): The number of overlapping rows between consecutive windows.
+        output_directory (Path): The directory where the segmented CSV files will be saved.
+        output_filename_prefix (str, optional): The prefix for the output CSV filenames. Defaults to 'window'.
+
+    Returns:
+        None
+    """
+    total_rows = len(df)
+    if total_rows == 0:
+        raise ValueError('The input DataFrame is empty. There is no data to segment.')
+    
+    if window_size > total_rows:
+        raise ValueError(f'Invalid window size: {window_size}. The DataFrame contains only {total_rows} rows, so no segmentation is possible.')
+    
+    if window_size < 1:
+        raise ValueError(f'Invalid window size: {window_size}. A segment must contain at least one row.')
+    
+    if overlap_size < 0:
+        raise ValueError(f'Invalid overlap size: {overlap_size}. Overlap must be 0 or greater.')
+
+    if overlap_size >= window_size:
+        raise ValueError(f'Invalid overlap size: {overlap_size}. The overlap must be smaller than the window size ({window_size}).')
+
+    start_position = 0
+    segment_count = 1
+    while start_position + window_size <= total_rows:
+        end_position = start_position + window_size
+        output_filename = f'{output_filename_prefix}_{segment_count}.csv'
+        segment_from_row_position_to_row_position(df, start_position, end_position, output_directory_path, output_filename)
+        
+        start_position += (window_size - overlap_size)
+        segment_count += 1
 
 if __name__ == '__main__':
     # Paths
-    annotated_episodes_path = get_annotations_file_path()
-    input_file_path = 'synchronized_merged_selected_annotated.csv'
+    #annotated_episodes_path = get_annotations_file_path()
+    input_file_path = 'synchronized_merged_selected_annotated_84.csv'
     input_dataset_path = get_input_path() / input_file_path
     output_path = get_output_path()
 
@@ -152,4 +236,5 @@ if __name__ == '__main__':
     # Save episodes
     #save_annotated_episodes(annotated_episodes, output_path)
 
-    segment_df_into_two_parts(dataset_df, 84, output_path)
+    # Save a segment
+    segment_from_row_position_to_row_position(dataset_df, 0, 1, output_path, input_file_path)
