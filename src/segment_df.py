@@ -138,27 +138,6 @@ def segment_df_into_two_parts(df: pd.DataFrame, proportion: int, output_path: Pa
     save_pandas_dataframe_to_csv(df_a, output_file_a_path)
     save_pandas_dataframe_to_csv(df_b, output_file_b_path)
 
-def get_middle_index(df: pd.DataFrame) -> int:
-    """
-    ! Not tested.
-
-    Returns the index of the sample in the middle of the DataFrame.
-
-    Args:
-        df (pd.DataFrame): The DataFrame containing the data to be segmented.
-
-    Returns:
-        int: The index of the sample in the middle of the DataFrame.
-    """
-    total_number_rows = len(df)
-    if total_number_rows == 0:
-        raise ValueError('The DataFrame is empty.')
-    
-    middle_position = total_number_rows // 2
-    middle_index = df.index[middle_position]    # For non-sequential indices, e.g., when df = pd.DataFrame({'A': [10, 20, 30]}, index=[100, 101, 102])
-
-    return middle_index
-
 def segment_from_row_position_to_row_position(df: pd.DataFrame, start_position: int, end_position: int, output_path: Path, output_filename: str = 'slice.csv') -> None:
     """
     ! Not tested.
@@ -177,6 +156,45 @@ def segment_from_row_position_to_row_position(df: pd.DataFrame, start_position: 
     """
     new_df = df.iloc[start_position : end_position]
     save_pandas_dataframe_to_csv(new_df, output_path / output_filename)
+
+def extract_middle_segment(df: pd.DataFrame, window_size: int, output_path: Path, output_filename: str = 'slice.csv') -> None:
+    """
+    ! Not tested.
+
+    Extracts and saves a middle segment of the DataFrame with the specified window size.
+    
+    The extracted segment is centered around the middle sample of the DataFrame.
+
+    Args:
+        df (pd.DataFrame): The input DataFrame.
+        window_size (int): The number of rows to include in the extracted segment.
+        output_path (Path): The directory where the CSV file will be saved.
+        output_filename (str, optional): The name of the output CSV file. Defaults to 'slice.csv'.
+    """
+    total_number_rows = len(df)
+    if total_number_rows == 0:
+        raise ValueError('The DataFrame is empty.')
+    
+    if total_number_rows < 3:
+        raise ValueError('The DataFrame has less than 3 rows, there is no middle sample.')
+    
+    if window_size >= total_number_rows:
+        raise ValueError('The window size needs to be smaller than the DataFrame.')
+
+    if window_size < 1:
+        raise ValueError('The window size should be at least 1 sample.')
+
+    middle_position = total_number_rows // 2
+
+    start_position = middle_position - window_size // 2
+    if start_position < 0:
+        raise ValueError('Cannot segment with this window, window start is out of bounds.')
+    
+    end_position = start_position + window_size
+    if end_position > total_number_rows:
+        raise ValueError('Cannot segment with this window, end of window is out of bounds.')
+
+    segment_from_row_position_to_row_position(df, start_position, end_position, output_path, output_filename)
 
 def segment_into_windows(df: pd.DataFrame, window_size: int, overlap_size: int, output_directory_path: Path, output_filename_prefix: str = 'window'):
     """
@@ -223,7 +241,7 @@ def segment_into_windows(df: pd.DataFrame, window_size: int, overlap_size: int, 
 if __name__ == '__main__':
     # Paths
     #annotated_episodes_path = get_annotations_file_path()
-    input_file_path = 'synchronized_merged_selected_annotated_84.csv'
+    input_file_path = '2024-12-05_ep_7_working.csv'
     input_dataset_path = get_input_path() / input_file_path
     output_path = get_output_path()
 
