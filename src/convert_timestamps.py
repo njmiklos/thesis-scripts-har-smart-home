@@ -98,7 +98,6 @@ def convert_timestamps_from_miliseconds_to_localized_datetime_srs(data_srs: pd.S
 
     Args:
         data_srs (pd.Series): The column in a DataFrame containing the time column in milliseconds.
-        time_col (str): Name of the time column to convert.
 
     Returns:
         pd.Series: Modified time column as localized datetime, e.g., 2000-01-01 01:00:00+01:00.
@@ -117,7 +116,6 @@ def convert_timestamps_from_localized_datetime_to_miliseconds_srs(data_srs: pd.S
     Args:
         df (pd.DataFrame): Input DataFrame containing the time column as localized datetime
         in the format '%Y-%m-%d %H:%M:%S'.
-        time_col (str): Name of the time column to convert.
 
     Returns:
         pd.DataFrame: Modified DataFrame with the time column in milliseconds since Unix epoch
