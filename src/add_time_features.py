@@ -196,7 +196,7 @@ def process_files(input_dir: Path, output_dir: Path, transforms: list) -> None:
         for transform in transforms:
             df = transform(df, 'time')
 
-        filename = file.stem
+        filename = file.stem + '.csv'
         save_pandas_dataframe_to_csv(df, output_dir / filename)
 
 
@@ -220,4 +220,4 @@ if __name__ == '__main__':
     ]
 
     process_files(input_path_training, output_path_training, transforms)
-process_files(input_path_testing, output_path_testing, transforms)
+    process_files(input_path_testing, output_path_testing, transforms)
