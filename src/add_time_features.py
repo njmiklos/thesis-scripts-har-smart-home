@@ -109,11 +109,15 @@ def add_time_of_day(df: pd.DataFrame, time_col: str) -> pd.DataFrame:
     """
     df = duplicate_column(df, time_col, 'timestamp')
     df['timestamp'] = convert_timestamps_from_miliseconds_to_localized_datetime_srs(df['timestamp'])
-    df['hour'] = df['timestamp'].dt.hour
 
-    df['time_of_day'] = df['hour'].apply(categorize_time_of_day)
+    if 'hour' in df.columns:    # Allows multiple temporal features to coexist
+        df['time_of_day'] = df['hour'].apply(categorize_time_of_day)
+        df.drop(columns=['timestamp'], inplace=True)
+    else:
+        df['hour'] = df['timestamp'].dt.hour
+        df['time_of_day'] = df['hour'].apply(categorize_time_of_day)
+        df.drop(columns=['timestamp', 'hour'], inplace=True)
 
-    df.drop(columns=['timestamp', 'hour'], inplace=True)
     return df
 
 def add_hour_minute_and_second_as_integers(df: pd.DataFrame, time_col: str) -> pd.DataFrame:
@@ -151,11 +155,16 @@ def add_weekday_as_cyclical(df: pd.DataFrame, time_col: str) -> pd.DataFrame:
     df = duplicate_column(df, time_col, 'timestamp')
     df['timestamp'] = convert_timestamps_from_miliseconds_to_localized_datetime_srs(df['timestamp'])
 
-    df['weekday'] = df['timestamp'].dt.dayofweek  # 0=Monday, 6=Sunday
-    df['weekday_sin'] = np.sin(2 * np.pi * df['weekday'] / 7)
-    df['weekday_cos'] = np.cos(2 * np.pi * df['weekday'] / 7)
+    if 'weekday' in df.columns:    # Allows multiple temporal features to coexist
+        df['weekday_sin'] = np.sin(2 * np.pi * df['weekday'] / 7)
+        df['weekday_cos'] = np.cos(2 * np.pi * df['weekday'] / 7)
+        df.drop(columns=['timestamp'], inplace=True)
+    else:
+        df['weekday'] = df['timestamp'].dt.dayofweek  # 0=Monday, 6=Sunday
+        df['weekday_sin'] = np.sin(2 * np.pi * df['weekday'] / 7)
+        df['weekday_cos'] = np.cos(2 * np.pi * df['weekday'] / 7)
+        df.drop(columns=['timestamp', 'weekday'], inplace=True)
 
-    df.drop(columns=['timestamp', 'weekday'], inplace=True)
     return df
 
 def add_hour_as_cyclical(df: pd.DataFrame, time_col: str) -> pd.DataFrame:
@@ -172,11 +181,16 @@ def add_hour_as_cyclical(df: pd.DataFrame, time_col: str) -> pd.DataFrame:
     df = duplicate_column(df, time_col, 'timestamp')
     df['timestamp'] = convert_timestamps_from_miliseconds_to_localized_datetime_srs(df['timestamp'])
 
-    df['hour'] = df['timestamp'].dt.hour
-    df['hour_sin'] = np.sin(2 * np.pi * df['hour'] / 24)
-    df['hour_cos'] = np.cos(2 * np.pi * df['hour'] / 24)
+    if 'hour' in df.columns:    # Allows multiple temporal features to coexist
+        df['hour_sin'] = np.sin(2 * np.pi * df['hour'] / 24)
+        df['hour_cos'] = np.cos(2 * np.pi * df['hour'] / 24)
+        df.drop(columns=['timestamp'], inplace=True)
+    else:
+        df['hour'] = df['timestamp'].dt.hour
+        df['hour_sin'] = np.sin(2 * np.pi * df['hour'] / 24)
+        df['hour_cos'] = np.cos(2 * np.pi * df['hour'] / 24)
+        df.drop(columns=['timestamp', 'hour'], inplace=True)
 
-    df.drop(columns=['timestamp', 'hour'], inplace=True)
     return df
 
 def process_files(input_dir: Path, output_dir: Path, transforms: list) -> None:
