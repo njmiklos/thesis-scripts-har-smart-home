@@ -89,7 +89,7 @@ def categorize_time_of_day(hour: int) -> int:
     else:
         raise ValueError(f'Cannot determine time of day of the given hour: {hour}.')
         
-def add_time_of_day(df: pd.DataFrame, time_col: str) -> pd.DataFrame:
+def add_time_of_day_as_integer(df: pd.DataFrame, time_col: str) -> pd.DataFrame:
     """
     Adds an integer-coded 'time_of_day' column to the DataFrame, based on hour extracted
     from a timestamp column in milliseconds.
@@ -117,6 +117,32 @@ def add_time_of_day(df: pd.DataFrame, time_col: str) -> pd.DataFrame:
         df['hour'] = df['timestamp'].dt.hour
         df['time_of_day'] = df['hour'].apply(categorize_time_of_day)
         df.drop(columns=['timestamp', 'hour'], inplace=True)
+
+    return df
+
+def add_time_of_day_as_cyclical(df: pd.DataFrame, time_col: str) -> pd.DataFrame:
+    """
+    Adds sine and cosine transformations of the time of day extracted from a timestamp column.
+
+    Args:
+        df (pd.DataFrame): The DataFrame containing the timestamp.
+        time_col (str): Column name containing timestamps in milliseconds.
+
+    Returns:
+        pd.DataFrame: Modified DataFrame with 'time_of_day_sin' and 'time_of_day_cos' columns added.
+    """
+    df = duplicate_column(df, time_col, 'timestamp')
+    df['timestamp'] = convert_timestamps_from_miliseconds_to_localized_datetime_srs(df['timestamp'])
+
+    if 'time_of_day' in df.columns:    # Allows multiple temporal features to coexist
+        df['time_of_day_sin'] = np.sin(2 * np.pi * df['time_of_day'] / 4)
+        df['time_of_day_cos'] = np.cos(2 * np.pi * df['time_of_day'] / 4)
+        df.drop(columns=['timestamp'], inplace=True)
+    else:
+        df = add_time_of_day_as_integer(df, time_col)
+        df['time_of_day_sin'] = np.sin(2 * np.pi * df['time_of_day'] / 4)
+        df['time_of_day_cos'] = np.cos(2 * np.pi * df['time_of_day'] / 4)
+        df.drop(columns=['timestamp', 'time_of_day'], inplace=True)
 
     return df
 
@@ -228,7 +254,8 @@ if __name__ == '__main__':
         add_day_and_month_as_integers,
         add_weekday_as_integer,
         add_weekday_as_cyclical,
-        add_time_of_day,
+        add_time_of_day_as_integer,
+        add_time_of_day_as_cyclical,
         add_hour_minute_and_second_as_integers,
         add_hour_as_cyclical
     ]
