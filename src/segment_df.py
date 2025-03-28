@@ -140,8 +140,6 @@ def segment_df_into_two_parts(df: pd.DataFrame, proportion: int, output_path: Pa
 
 def segment_from_row_position_to_row_position(df: pd.DataFrame, start_position: int, end_position: int, output_path: Path, output_filename: str = 'slice.csv') -> None:
     """
-    ! Not tested.
-
     Saves into a file a segment of the data between the specified row positions in the DataFrame.
 
     Args:
@@ -159,8 +157,6 @@ def segment_from_row_position_to_row_position(df: pd.DataFrame, start_position: 
 
 def extract_middle_segment(df: pd.DataFrame, window_size: int, output_path: Path, output_filename: str = 'slice.csv') -> None:
     """
-    ! Not tested.
-
     Extracts and saves a middle segment of the DataFrame with the specified window size.
     
     The extracted segment is centered around the middle sample of the DataFrame.
@@ -240,19 +236,20 @@ def segment_into_windows(df: pd.DataFrame, window_size: int, overlap_size: int, 
 
 if __name__ == '__main__':
     # Paths
-    #annotated_episodes_path = get_annotations_file_path()
-    input_file_path = '2024-12-05_ep_7_working.csv'
-    input_dataset_path = get_input_path() / input_file_path
+    annotated_episodes_path = get_annotations_file_path()
+    input_file_name = 'synchronized_merged_selected_annotated.csv'
+    input_dataset_path = get_input_path() / input_file_name
     output_path = get_output_path()
 
     # Read datasets
     dataset_df = read_csv_to_pandas_dataframe(input_dataset_path)
-    #annotations_df = read_csv_to_pandas_dataframe(annotated_episodes_path)
+    annotations_df = read_csv_to_pandas_dataframe(annotated_episodes_path)
 
     # Split into annotated episodes
-    #annotated_episodes = segment_into_annotated_episodes(dataset_df, annotations_df)
+    annotated_episodes = segment_into_annotated_episodes(dataset_df, annotations_df)
     # Save episodes
-    #save_annotated_episodes(annotated_episodes, output_path)
+    save_annotated_episodes(annotated_episodes, output_path)
 
     # Save a segment
-    segment_from_row_position_to_row_position(dataset_df, 0, 1, output_path, input_file_path)
+    #extract_middle_segment(dataset_df, 300, output_path, input_file_name)
+    #segment_from_row_position_to_row_position(dataset_df, 413, 714, output_path, input_file_name)

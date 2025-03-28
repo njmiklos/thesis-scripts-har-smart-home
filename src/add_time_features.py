@@ -212,10 +212,10 @@ if __name__ == '__main__':
 
     transforms = [
         add_day_and_month_as_integers,
-        add_hour_minute_and_second_as_integers,
         add_weekday_as_integer,
-        add_time_of_day,
         add_weekday_as_cyclical,
+        add_time_of_day,
+        add_hour_minute_and_second_as_integers,
         add_hour_as_cyclical
     ]
 

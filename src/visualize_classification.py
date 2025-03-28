@@ -40,7 +40,7 @@ def visualize_confusion_matrix(data: dict, model_version: str, output_path: Path
 
     Args:
         data (dict): JSON data containing the confusion matrix.
-        model_version (str): Model version ("int8" or "float32").
+        model_version (str): Model version ("int8" or "float32"), both available in data.
         output_path (Path): Directory path to save the confusion matrix image.
     """
     if model_version not in data['validation']:
@@ -61,12 +61,12 @@ def visualize_confusion_matrix(data: dict, model_version: str, output_path: Path
 
 if __name__ == '__main__':
     # Paths
-    input_file_name = 'model-report.json'
+    input_file_name = 'episodic-split-only-annotated-data-validation-metrics.json'
     input_file_path = get_input_path() / input_file_name
     output_dir_path = get_output_path()
 
     output_dir_path.mkdir(parents=True, exist_ok=True)
 
     report = load_json_file(input_file_path)
-    visualize_confusion_matrix(report, 'int8', output_dir_path)
+    visualize_confusion_matrix(report, 'float32', output_dir_path)
 
