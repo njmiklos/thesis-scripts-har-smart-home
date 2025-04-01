@@ -1,3 +1,7 @@
+"""
+Compresses raw sensor data into a textual summary that higlights changes in sensor data.
+"""
+
 import pandas as pd
 
 from pathlib import Path
