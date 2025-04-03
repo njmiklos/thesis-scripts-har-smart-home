@@ -170,73 +170,13 @@ def generate_scatter_plot(time_srs: pd.Series, data_srs: pd.Series, plot_title: 
     except Exception as e:
         plt.close()
         return False
-
-def generate_comparative_timeseries_plot_of_3_measurements(
-    plot_title: str, value_axis_label: str, time_srs: pd.Series, time_axis_label: str, 
-    data_srs1: pd.Series, data_srs1_label: str, data_srs2: pd.Series, data_srs2_label: str, 
-    data_srs3: pd.Series, data_srs3_label: str, output_dir_path: Path,
-    srs1_color='orange', srs2_color='green', srs3_color='blue',
-    linewidth=2.0, alpha=0.8, marker='o', markersize=5) -> bool:
-    """
-    Generates and saves a time series line plot comparing three data series.
-
-    Args:
-        time_srs (pd.Series): The time values.
-        data_srs1, data_srs2, data_srs3 (pd.Series): Data series to plot.
-        data_srs1_label, data_srs2_label, data_srs3_label (str): Labels for the data series.
-        plot_title (str): Title of the plot.
-        time_axis_label (str): X-axis label.
-        value_axis_label (str): Y-axis label.
-        output_dir_path (Path): Directory to save the plot.
-        srs1_color, srs2_color, srs3_color (str): Colors for the lines.
-        linewidth (float): Width of the lines.
-        alpha (float): Transparency of the lines.
-        marker (str): Marker style for data points.
-        markersize (float): Size of the markers.
-
-    Returns:
-        bool: True if plot was saved successfully, False otherwise.
-    """
-
-    linestyles = ['-', '--', ':']
-
-    plt.figure(figsize=(12, 6))
-
-    plt.plot(time_srs, data_srs1, label=data_srs1_label, color=srs1_color, linestyle=linestyles[0],
-             linewidth=linewidth, alpha=alpha, marker=marker, markersize=markersize)
-    
-    plt.plot(time_srs, data_srs2, label=data_srs2_label, color=srs2_color, linestyle=linestyles[1],
-             linewidth=linewidth, alpha=alpha, marker=marker, markersize=markersize)
-    
-    if data_srs3 is not None and data_srs3_label:
-        plt.plot(time_srs, data_srs3, label=data_srs3_label, color=srs3_color, linestyle=linestyles[2],
-                 linewidth=linewidth, alpha=alpha, marker=marker, markersize=markersize)
-
-    plt.xlabel(time_axis_label.title())
-    plt.ylabel(value_axis_label.title())
-    plt.title(plot_title.replace('_', ' ').title())
-
-    plt.legend()
-    plt.grid(True)
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-
-    plot_filename = f"{plot_title.replace(' ', '_').lower()}_comparative_time_series_plot.png"
-    output_path = output_dir_path / plot_filename
-    try:
-        plt.savefig(output_path, format='png', dpi=300)
-        plt.close()
-        return True
-    except Exception as e:
-        plt.close()
-        print(e)
-        return False
     
 def generate_comparative_timeseries_plot(time_srs: pd.Series, data_srs1: pd.Series, data_srs2: pd.Series, 
                                          data_srs1_label: str, data_srs2_label: str, 
                                          plot_title: str, time_axis_label: str, value_axis_label: str, 
                                          output_dir_path: Path, srs1_color='orange', srs2_color='green',
-                                         linestyle='-', linewidth=2.0, alpha=0.8, marker='o', markersize=5) -> bool:
+                                         linestyle_srs1='--', linestyle_srs2='-.',
+                                         linewidth=2.0, alpha=0.8, marker='o', markersize=5) -> bool:
     """
     Generates and saves a time series line plot comparing two data series.
 
@@ -250,7 +190,8 @@ def generate_comparative_timeseries_plot(time_srs: pd.Series, data_srs1: pd.Seri
         output_dir_path (Path): The directory path where the plot image will be saved.
         srs1_color (str, optional): Color of the original data line.
         srs2_color (str, optional): Color of the modified data line.
-        linestyle (str, optional): Line style for the plot (e.g., '-', '--', '-.', ':').
+        linestyle_srs1 (str, optional): Line style for the data_srs1 (e.g., '-', '--', '-.', ':').
+        linestyle_srs2 (str, optional): Line style for the data_srs2 (e.g., '-', '--', '-.', ':').
         linewidth (float, optional): Line width for the plot.
         alpha (float, optional): Transparency level for the line.
         marker (str, optional): Marker style for data points.
@@ -261,9 +202,9 @@ def generate_comparative_timeseries_plot(time_srs: pd.Series, data_srs1: pd.Seri
     """
     # Create time series plot
     plt.figure(figsize=(12, 6))
-    plt.plot(time_srs, data_srs1, label=data_srs1_label, color=srs1_color, linestyle=linestyle, 
+    plt.plot(time_srs, data_srs1, label=data_srs1_label, color=srs1_color, linestyle=linestyle_srs1, 
              linewidth=linewidth, alpha=alpha, marker=marker, markersize=markersize)
-    plt.plot(time_srs, data_srs2, label=data_srs2_label, color=srs2_color, linestyle=linestyle, 
+    plt.plot(time_srs, data_srs2, label=data_srs2_label, color=srs2_color, linestyle=linestyle_srs2, 
              linewidth=linewidth, alpha=alpha, marker=marker, markersize=markersize)
 
     # Add labels and title
