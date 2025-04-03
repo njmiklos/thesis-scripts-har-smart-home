@@ -13,7 +13,6 @@ from handle_csv import (read_csv_to_pandas_dataframe, get_all_csv_files_in_direc
 from visualize_data import generate_timeseries_plot
 
 
-
 def get_column_name(df: pd.DataFrame, measurement: str, location: Optional[str] = None) -> str:
     """
     Retrieves the column name from a DataFrame that matches a given measurement and optional location.
@@ -45,11 +44,12 @@ def get_column_name(df: pd.DataFrame, measurement: str, location: Optional[str] 
 
     return matching_columns[0]
 
-def process_single_location_measurements(df: pd.DataFrame, output_dir: Path, measurements: List[str]) -> None:
+def process_single_location_measurements(episode_name: str, df: pd.DataFrame, output_dir: Path, measurements: List[str]) -> None:
     """
     Processes and plots time series data for single-location measurements.
 
     Args:
+        episode_name (str): Name of the episode, needed for output filenames.
         df (pd.DataFrame): DataFrame containing the time series data.
         output_dir (Path): Directory where the plots will be saved.
         measurements (List[str]): List of measurement names to plot.
@@ -59,16 +59,18 @@ def process_single_location_measurements(df: pd.DataFrame, output_dir: Path, mea
     """
     for measurement in measurements:
         column_name = get_column_name(df, measurement)
+        plot_title = f'{episode_name} {column_name}'
         generate_timeseries_plot(time_srs=df['time'], data_srs=df[column_name], 
-                                    plot_title=column_name, time_axis_label='Date',
+                                    plot_title=plot_title, time_axis_label='Date',
                                     value_axis_label=f'{measurement}', output_dir_path=output_dir)
 
-def process_multi_location_measurements(df: pd.DataFrame, output_dir: Path, 
+def process_multi_location_measurements(episode_name: str, df: pd.DataFrame, output_dir: Path, 
                                         measurements: List[str], locations: List[str]) -> None:
     """
     Processes and plots time series data for measurements available in multiple locations.
 
     Args:
+        episode_name (str): Name of the episode, needed for output filenames.
         df (pd.DataFrame): DataFrame containing the time series data.
         output_dir (Path): Directory where the plots will be saved.
         measurements (List[str]): List of measurement names to plot.
@@ -80,15 +82,17 @@ def process_multi_location_measurements(df: pd.DataFrame, output_dir: Path,
     for location in locations:
         for measurement in measurements:
             column_name = get_column_name(df, measurement, location)
+            plot_title = f'{episode_name} {column_name}'
             generate_timeseries_plot(time_srs=df['time'], data_srs=df[column_name], 
-                                        plot_title=column_name, time_axis_label='Date',
+                                        plot_title=plot_title, time_axis_label='Date',
                                         value_axis_label=f'{measurement}', output_dir_path=output_dir)
         
-def process_df(df: pd.DataFrame, output_dir: Path) -> None:
+def process_df(episode_name: str, df: pd.DataFrame, output_dir: Path) -> None:
     """
     Processes a DataFrame by generating plots for both single-location and multi-location measurements.
 
     Args:
+        episode_name (str): Name of the episode, needed for output filenames.
         df (pd.DataFrame): The data to be processed and visualized.
         output_dir (Path): Directory where the plots will be saved.
 
@@ -100,8 +104,8 @@ def process_df(df: pd.DataFrame, output_dir: Path) -> None:
                                    'magnitude gyroscope', 'temperature'] 
     single_location_measurements = ['CO2', 'air quality', 'min sound', 'max sound']
 
-    process_single_location_measurements(df, output_dir, single_location_measurements)
-    process_multi_location_measurements(df, output_dir, multi_location_measurements, locations)
+    process_single_location_measurements(episode_name, df, output_dir, single_location_measurements)
+    process_multi_location_measurements(episode_name, df, output_dir, multi_location_measurements, locations)
 
 def process_files(input_dir: Path, output_dir: Path) -> None:
     """
@@ -122,7 +126,7 @@ def process_files(input_dir: Path, output_dir: Path) -> None:
         print(f'Processing {counter}/{file_no} {file.name}...')
         try:
             df = read_csv_to_pandas_dataframe(file)
-            process_df(df, output_dir)
+            process_df(file.stem, df, output_dir)
         except Exception as e:
             print(f'Error processing {file}: {e}')
         counter += 1
