@@ -6,51 +6,95 @@ from different locations to a single graph.
 import pandas as pd
 
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 from get_env import (get_input_path, get_output_path)
 from handle_csv import (read_csv_to_pandas_dataframe, get_all_csv_files_in_directory)
-from infer_sensor_metadata import infer_unit
-from visualize_data import generate_timeseries_plot, generate_comparative_timeseries_plot_of_3_measurements
+from visualize_data import generate_timeseries_plot
 
-def get_column_name_with_measurement(df: pd.DataFrame, measurement: str) -> str:
-    column_name_with_measurement = None
+
+
+def get_column_name(df: pd.DataFrame, measurement: str, location: Optional[str] = None) -> str:
+    """
+    Retrieves the column name from a DataFrame that matches a given measurement and optional location.
+
+    Args:
+        df (pd.DataFrame): The DataFrame to search for matching columns.
+        measurement (str): The measurement name to look for (e.g., "temperature").
+        location (Optional[str]): The optional location name to narrow down the search.
+
+    Returns:
+        str: The name of the matching column.
+
+    Raises:
+        ValueError: If no matching or multiple matching columns are found.
+    """
+    matching_columns = []
     for col in df.columns:
         if measurement in col:
-            column_name_with_measurement = col
+            if not location or location in col:
+                matching_columns.append(col)
 
-    if column_name_with_measurement:
-        return column_name_with_measurement
-    else:
-        raise ValueError(f'No column with measurement {measurement} in the DataFrame.')
-
-def process_single_location_measurements(df: pd.DataFrame, output_dir: Path, measurements: List) -> None:
-    for measurement in measurements:
-        column_name_with_measurement = get_column_name_with_measurement(df, measurement)
-        unit = infer_unit(measurement)
-        generate_timeseries_plot(time_srs=df['time'], data_srs=df[column_name_with_measurement], 
-                                    plot_title=column_name_with_measurement, time_axis_label='Date',
-                                    value_axis_label=f'{measurement} [{unit}]', output_dir_path=output_dir)
-
-def get_column_name_with_measurement_and_location(df: pd.DataFrame, measurement: str, location: str) -> str:
-    column_name_with_measurement = None
-    for col in df.columns:
-        if measurement in col:
-            column_name_with_measurement = col
-
-    if column_name_with_measurement:
-        # find location
-    else:
-        raise ValueError(f'No column with measurement {measurement} in the DataFrame.')
+    if not matching_columns:
+        raise ValueError(f'No column found containing measurement "{measurement}"' +
+                         (f' and location "{location}".' if location else '.'))
     
+    if len(matching_columns) > 1:
+        raise ValueError(f'More than one column found containing measurement "{measurement}"' +
+                         (f' and location "{location}".' if location else '.'))
+
+    return matching_columns[0]
+
+def process_single_location_measurements(df: pd.DataFrame, output_dir: Path, measurements: List[str]) -> None:
+    """
+    Processes and plots time series data for single-location measurements.
+
+    Args:
+        df (pd.DataFrame): DataFrame containing the time series data.
+        output_dir (Path): Directory where the plots will be saved.
+        measurements (List[str]): List of measurement names to plot.
+
+    Returns:
+        None
+    """
+    for measurement in measurements:
+        column_name = get_column_name(df, measurement)
+        generate_timeseries_plot(time_srs=df['time'], data_srs=df[column_name], 
+                                    plot_title=column_name, time_axis_label='Date',
+                                    value_axis_label=f'{measurement}', output_dir_path=output_dir)
+
 def process_multi_location_measurements(df: pd.DataFrame, output_dir: Path, 
                                         measurements: List[str], locations: List[str]) -> None:
+    """
+    Processes and plots time series data for measurements available in multiple locations.
+
+    Args:
+        df (pd.DataFrame): DataFrame containing the time series data.
+        output_dir (Path): Directory where the plots will be saved.
+        measurements (List[str]): List of measurement names to plot.
+        locations (List[str]): List of location names to combine with measurements.
+
+    Returns:
+        None
+    """
     for location in locations:
         for measurement in measurements:
-            column_name_with_measurement_and_location = get_column_name_with_measurement_and_location(df, measurement)
-            unit = infer_unit(measurement)
-
+            column_name = get_column_name(df, measurement, location)
+            generate_timeseries_plot(time_srs=df['time'], data_srs=df[column_name], 
+                                        plot_title=column_name, time_axis_label='Date',
+                                        value_axis_label=f'{measurement}', output_dir_path=output_dir)
+        
 def process_df(df: pd.DataFrame, output_dir: Path) -> None:
+    """
+    Processes a DataFrame by generating plots for both single-location and multi-location measurements.
+
+    Args:
+        df (pd.DataFrame): The data to be processed and visualized.
+        output_dir (Path): Directory where the plots will be saved.
+
+    Returns:
+        None
+    """
     locations = ['kitchen', 'living room', 'entrance']
     multi_location_measurements = ['humidity', 'luminosity', 'magnitude accelerometer', 
                                    'magnitude gyroscope', 'temperature'] 
@@ -61,22 +105,35 @@ def process_df(df: pd.DataFrame, output_dir: Path) -> None:
 
 def process_files(input_dir: Path, output_dir: Path) -> None:
     """
-    Processes all CSV files in the input directory.
+    Processes all CSV files in the input directory by reading, analyzing, and plotting the data.
 
     Args:
         input_dir (Path): Directory containing input CSV files.
-    
+        output_dir (Path): Directory where output plots will be saved.
+
     Returns:
         None
     """
     files = get_all_csv_files_in_directory(input_dir)
+    file_no = len(files)
+    counter = 1
+
     for file in files:
-        df = read_csv_to_pandas_dataframe(file)
-        process_df(df, output_dir)
+        print(f'Processing {counter}/{file_no} {file.name}...')
+        try:
+            df = read_csv_to_pandas_dataframe(file)
+            process_df(df, output_dir)
+        except Exception as e:
+            print(f'Error processing {file}: {e}')
+        counter += 1
 
 
 if __name__ == '__main__':
     input_path = get_input_path()
+    if not input_path.exists():
+        raise FileNotFoundError(f'Input directory {input_path} does not exist.')
+    
     output_path = get_output_path()
+    output_path.mkdir(parents=True, exist_ok=True)
 
     process_files(input_path, output_path)
