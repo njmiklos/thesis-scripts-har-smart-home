@@ -155,6 +155,48 @@ def segment_from_row_position_to_row_position(df: pd.DataFrame, start_position: 
     new_df = df.iloc[start_position : end_position]
     save_pandas_dataframe_to_csv(new_df, output_path / output_filename)
 
+def extract_window_around_timestamp(df: pd.DataFrame, window_size: int, timestamp: int, output_path: Path, output_filename: str = 'slice.csv') -> None:
+    """
+    Extracts and saves a segment of the DataFrame with the specified window size,
+    centered around the specified timestamp.
+
+    Args:
+        df (pd.DataFrame): The input DataFrame.
+        window_size (int): The number of rows to include in the extracted segment.
+        timestamp (int): The timestamp in the centre of the window to be.
+        output_path (Path): The directory where the CSV file will be saved.
+        output_filename (str, optional): The name of the output CSV file. Defaults to 'slice.csv'.
+    """
+    total_number_rows = len(df)
+    if total_number_rows == 0:
+        raise ValueError('The DataFrame is empty.')
+
+    if window_size >= total_number_rows:
+        raise ValueError('The window size needs to be smaller than the DataFrame.')
+
+    if window_size < 1:
+        raise ValueError('The window size should be at least 1 sample.')
+
+    #middle_positions = df.index[df['time'] == timestamp].tolist()
+    matches = df['time'] == timestamp   # boolean series with True where time column equals timestamp
+    matching_indices = df.index[matches]    # index positions where time column equals timestamp
+    middle_positions = matching_indices.tolist()    # list of middle positions
+
+    if not middle_positions:
+        raise ValueError(f'Timestamp {timestamp} not found in the DataFrame.')
+
+    middle_position = middle_positions[0]  # Take first occurrence if multiple
+
+    start_position = middle_position - window_size // 2
+    if start_position < 0:
+        raise ValueError('Cannot segment with this window, window start is out of bounds.')
+
+    end_position = start_position + window_size
+    if end_position > total_number_rows:
+        raise ValueError('Cannot segment with this window, end of window is out of bounds.')
+
+    segment_from_row_position_to_row_position(df, start_position, end_position, output_path, output_filename)
+
 def extract_middle_segment(df: pd.DataFrame, window_size: int, output_path: Path, output_filename: str = 'slice.csv') -> None:
     """
     Extracts and saves a middle segment of the DataFrame with the specified window size.
@@ -246,10 +288,10 @@ if __name__ == '__main__':
     annotations_df = read_csv_to_pandas_dataframe(annotated_episodes_path)
 
     # Split into annotated episodes
-    annotated_episodes = segment_into_annotated_episodes(dataset_df, annotations_df)
+    #annotated_episodes = segment_into_annotated_episodes(dataset_df, annotations_df)
     # Save episodes
-    save_annotated_episodes(annotated_episodes, output_path)
+    #save_annotated_episodes(annotated_episodes, output_path)
 
     # Save a segment
     #extract_middle_segment(dataset_df, 300, output_path, input_file_name)
-    #segment_from_row_position_to_row_position(dataset_df, 413, 714, output_path, input_file_name)
+    segment_from_row_position_to_row_position(dataset_df, 413, 714, output_path, input_file_name)
