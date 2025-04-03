@@ -278,14 +278,14 @@ def segment_into_windows(df: pd.DataFrame, window_size: int, overlap_size: int, 
 
 if __name__ == '__main__':
     # Paths
-    annotated_episodes_path = get_annotations_file_path()
-    input_file_name = 'synchronized_merged_selected_annotated.csv'
+    #annotated_episodes_path = get_annotations_file_path()
+    input_file_name = 'synchronized_merged_selected_annotated_new_col_names.csv'
     input_dataset_path = get_input_path() / input_file_name
     output_path = get_output_path()
 
     # Read datasets
     dataset_df = read_csv_to_pandas_dataframe(input_dataset_path)
-    annotations_df = read_csv_to_pandas_dataframe(annotated_episodes_path)
+    #annotations_df = read_csv_to_pandas_dataframe(annotated_episodes_path)
 
     # Split into annotated episodes
     #annotated_episodes = segment_into_annotated_episodes(dataset_df, annotations_df)
@@ -294,4 +294,17 @@ if __name__ == '__main__':
 
     # Save a segment
     #extract_middle_segment(dataset_df, 300, output_path, input_file_name)
-    segment_from_row_position_to_row_position(dataset_df, 413, 714, output_path, input_file_name)
+    #segment_from_row_position_to_row_position(dataset_df, 413, 714, output_path, input_file_name)
+
+    episodes = ['Airing', 'Eating a meal', 'Eating breakfast', 'Eating dinner', 'Eating supper',
+                'Entering home', 'Getting up', 'Leaving home', 'Other', 'Preparing a drink', 
+                'Preparing a meal', 'Preparing breakfast', 'Preparing dinner', 'Preparing for bed', 'Preparing supper', 
+                'Relaxing', 'Sleeping', 'Working', 'Working out']
+    timestamps = [1733952556000, 1733415268000, 1733724929000, 1733568599000, 1734461489000, 
+                  1734168749000, 1733377106000, 1733816039000, 1733929049000, 1733833948000, 
+                  1733413809000, 1733723175000, 1733566648000, 1734039915000, 1734458602000, 
+                  1734294629000, 1733794789000, 1733388388000, 1733933998000]
+    
+    for episode, timestamp in zip(episodes, timestamps):
+        output_filename  =  f'{episode}.csv'
+        extract_window_around_timestamp(dataset_df, 900, timestamp, output_path, output_filename)
