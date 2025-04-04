@@ -123,8 +123,8 @@ def process_files(input_dir: Path, output_dir: Path) -> None:
             df = read_csv_to_pandas_dataframe(file)
 
             episode_name = file.stem
-            output_dir = output_dir / f'{episode_name}'
-            output_dir.mkdir(parents=True, exist_ok=True)
+            episode_output_dir = output_dir / f'{episode_name}'
+            episode_output_dir.mkdir(parents=True, exist_ok=True)
 
             process_df(df, output_dir)
         except Exception as e:
