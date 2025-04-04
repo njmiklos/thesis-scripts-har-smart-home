@@ -13,7 +13,7 @@ from handle_csv import (read_csv_to_pandas_dataframe, get_all_csv_files_in_direc
 from visualize_data import generate_timeseries_plot
 
 
-def get_column_name(df: pd.DataFrame, measurement: str, location: Optional[str] = None) -> str:
+def get_column_name(df: pd.DataFrame, measurement: str, location: Optional[str] = None) -> List[str]:
     """
     Retrieves the column name from a DataFrame that matches a given measurement and optional location.
 
@@ -23,7 +23,7 @@ def get_column_name(df: pd.DataFrame, measurement: str, location: Optional[str] 
         location (Optional[str]): The optional location name to narrow down the search.
 
     Returns:
-        str: The name of the matching column.
+        List[str]: The name of the matching column.
 
     Raises:
         ValueError: If no matching or multiple matching columns are found.
@@ -37,12 +37,8 @@ def get_column_name(df: pd.DataFrame, measurement: str, location: Optional[str] 
     if not matching_columns:
         raise ValueError(f'No column found containing measurement "{measurement}"' +
                          (f' and location "{location}".' if location else '.'))
-    
-    if len(matching_columns) > 1:
-        raise ValueError(f'More than one column found containing measurement "{measurement}"' +
-                         (f' and location "{location}".' if location else '.'))
 
-    return matching_columns[0]
+    return matching_columns
 
 def process_single_location_measurements(df: pd.DataFrame, output_dir: Path, measurements: List[str]) -> None:
     """
@@ -57,10 +53,12 @@ def process_single_location_measurements(df: pd.DataFrame, output_dir: Path, mea
         None
     """
     for measurement in measurements:
-        column_name = get_column_name(df, measurement)      
-        generate_timeseries_plot(time_srs=df['time'], data_srs=df[column_name], 
-                                    plot_title=column_name, time_axis_label='Date',
-                                    value_axis_label=f'{measurement}', output_dir_path=output_dir)
+        column_names = get_column_name(df, measurement)
+        for column_name in column_names:    
+            print(f'- Generating plot of {measurement}...')
+            generate_timeseries_plot(time_srs=df['time'], data_srs=df[column_name], 
+                                        plot_title=column_name, time_axis_label='Date',
+                                        value_axis_label=f'{measurement}', output_dir_path=output_dir)
 
 def process_multi_location_measurements(df: pd.DataFrame, output_dir: Path, 
                                         measurements: List[str], locations: List[str]) -> None:
@@ -78,10 +76,12 @@ def process_multi_location_measurements(df: pd.DataFrame, output_dir: Path,
     """
     for location in locations:
         for measurement in measurements:
-            column_name = get_column_name(df, measurement, location)
-            generate_timeseries_plot(time_srs=df['time'], data_srs=df[column_name], 
-                                        plot_title=column_name, time_axis_label='Date',
-                                        value_axis_label=f'{measurement}', output_dir_path=output_dir)
+            column_names = get_column_name(df, measurement, location)
+            for column_name in column_names:
+                print(f'- Generating plot of {location} {measurement}...')
+                generate_timeseries_plot(time_srs=df['time'], data_srs=df[column_name], 
+                                            plot_title=column_name, time_axis_label='Date',
+                                            value_axis_label=f'{measurement}', output_dir_path=output_dir)
         
 def process_df(df: pd.DataFrame, output_dir: Path) -> None:
     """
