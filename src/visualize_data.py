@@ -1,10 +1,27 @@
 import pandas as pd
 import numpy as np
+import re
 import matplotlib.pyplot as plt
 from pathlib import Path
 
 from convert_timestamps import convert_timestamps_from_miliseconds_to_localized_datetime_srs
 
+
+def create_safe_title(title: str) -> str:
+    """
+    Create a safe filename from a title by removing all characters 
+    except letters (a-z, A-Z) and whitespace, replacing spaces with underscores,
+    and changing to lower case.
+
+    Args:
+        title (str): The original title string to sanitize.
+
+    Returns:
+        str: A filename-safe version of the title.
+    """
+    cleaned = re.sub(r'[^a-zA-Z\s]', '', title)
+    safe_title = cleaned.replace(' ', '_')
+    return safe_title.lower()
 
 def generate_histogram(data_srs: pd.Series, title: str, frequency_axis_label: str, 
                   value_axis_label: str, output_dir_path: Path, color='green',  bins: int = 15) -> bool:
@@ -39,10 +56,9 @@ def generate_histogram(data_srs: pd.Series, title: str, frequency_axis_label: st
     plt.grid(True)
 
     #plt.show()
-    title = title.replace(' ', '_')
-    title = title.lower()
-    title = f'{title}_histogram.png'
-    output_path = output_dir_path / title
+    raw_title = f'{title}_histogram'
+    safe_filename = create_safe_title(raw_title) + '.png'
+    output_path = output_dir_path / safe_filename
     try:
         plt.savefig(output_path, format='png', dpi=300)
         plt.close()
@@ -102,10 +118,9 @@ def generate_comparative_scatterplots(time_srs1: pd.Series, time_srs2: pd.Series
     plt.tight_layout()
 
     # Save the plot
-    plot_title = plot_title.replace(' ', '_')
-    plot_title = plot_title.lower()
-    plot_title = f'{plot_title}_{modification}_scatter_plot.png'
-    output_path = output_dir_path / plot_title
+    raw_title = f'{plot_title}_comparative_scatter_plot'
+    safe_filename = create_safe_title(raw_title) + '.png'
+    output_path = output_dir_path / safe_filename
     try:
         plt.savefig(output_path, format='png', dpi=300)
         plt.close()
@@ -159,10 +174,9 @@ def generate_scatter_plot(time_srs: pd.Series, data_srs: pd.Series, plot_title: 
     plt.tight_layout()
 
     # Save the plot
-    plot_title = plot_title.replace(' ', '_')
-    plot_title = plot_title.lower()
-    plot_title = f'{plot_title}_scatter_plot.png'
-    output_path = output_dir_path / plot_title
+    raw_title = f'{plot_title}_scatter_plot'
+    safe_filename = create_safe_title(raw_title) + '.png'
+    output_path = output_dir_path / safe_filename
     try:
         plt.savefig(output_path, format='png', dpi=300)
         plt.close()
@@ -219,8 +233,9 @@ def generate_comparative_timeseries_plot(time_srs: pd.Series, data_srs1: pd.Seri
     plt.tight_layout()
 
     # Save the plot
-    plot_filename = f"{plot_title.replace(' ', '_').lower()}_comparative_time_series_plot.png"
-    output_path = output_dir_path / plot_filename
+    raw_title = f'{plot_title}_comparative_time_series_plot'
+    safe_filename = create_safe_title(raw_title) + '.png'
+    output_path = output_dir_path / safe_filename
     try:
         plt.savefig(output_path, format='png', dpi=300)
         plt.close()
@@ -290,8 +305,9 @@ def generate_timeseries_plot(time_srs: pd.Series, data_srs: pd.Series, plot_titl
     plt.tight_layout()
 
     # Save the plot
-    plot_filename = f"{plot_title.replace(' ', '_').lower()}_time_series_plot.png"
-    output_path = output_dir_path / plot_filename
+    raw_title = f'{plot_title}_time_series_plot'
+    safe_filename = create_safe_title(raw_title) + '.png'
+    output_path = output_dir_path / safe_filename
     try:
         plt.savefig(output_path, format='png', dpi=300)
         plt.close()
@@ -335,9 +351,9 @@ def generate_heatmap(df: pd.DataFrame, output_dir_path: Path, title: str = 'Feat
     plt.grid(visible=True, color='gray', linestyle='--', linewidth=0.5)
 
     # Prepare the output path
-    file_out = f"{title.replace(' ', '_').lower()}.png"
-    output_path = output_dir_path / file_out
-    
+    safe_filename = create_safe_title(title) + '.png'
+    output_path = output_dir_path / safe_filename
+
     # Save the plot
     try:
         plt.savefig(output_path, format='png', dpi=400, bbox_inches='tight')
