@@ -126,7 +126,7 @@ def process_files(input_dir: Path, output_dir: Path) -> None:
             episode_output_dir = output_dir / f'{episode_name}'
             episode_output_dir.mkdir(parents=True, exist_ok=True)
 
-            process_df(df, output_dir)
+            process_df(df, episode_output_dir)
         except Exception as e:
             print(f'Error processing {file}: {e}')
         counter += 1
