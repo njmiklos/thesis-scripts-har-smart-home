@@ -106,19 +106,17 @@ def send_chat_request(api_config: Dict[str, str], prompt: str, user_message: str
     
     return system_response
 
-def print_headers(system_response: requests.Response) -> None:
+def get_headers(system_response: requests.Response) -> Dict[str, int]:
     """
-    Prints the headers of the API response.
+    Extracts the headers of the API response.
 
     Args:
-        system_response (requests.Response): The HTTP response object.
+        Dict[str, int]: A dictionary containing headers.
     """
-    if system_response.headers.items():
-        print('Response Headers:')
-        for key, value in system_response.headers.items():
-            print(f'- {key}: {value}')
-    else:
-        print('Response headers empty.')
+    headers = {}
+    for key, value in system_response.headers.items():
+        headers[key] = value
+    return headers
 
 def get_request_token_usage(system_response: requests.Response) -> Dict[str, int]:
     """
@@ -156,15 +154,20 @@ def print_usage(system_response: requests.Response) -> None:
     Args:
         system_response (requests.Response): The HTTP response object.
     """
-    response_tokens = get_request_token_usage(system_response)
-    total_tokens = get_rate_limits(system_response)
+    headers = get_headers(system_response)
+    tokens = get_request_token_usage(system_response)
+    rate_limits = get_rate_limits(system_response)
+
+    print('Headers:')
+    for key, value in headers.items():
+        print(f'- {key}: {value}')
 
     print('Tokens used for request:')
-    for key, value in response_tokens.items():
+    for key, value in tokens.items():
         print(f'- {key}: {value}')
 
     print('Total rate limits:')
-    for key, value in total_tokens.items():
+    for key, value in rate_limits.items():
         print(f'- {key}: {value}')
             
 def get_system_message(system_response: requests.Response) -> str:
@@ -216,10 +219,11 @@ def print_formatted_exchange(user_message: str, system_response: requests.Respon
 
 
 if __name__ == '__main__':
-    model = 'internvl2.5-8b'
+    model = 'meta-llama-3.1-8b-instruct'
     prompt = 'You are a helpful assistant'
-    user_message = 'Describe changes in the given measurements over time.'
-    image_path = 'some/path.jpg'
+    user_message = 'What is Python, in a single sentence?'
+    #image_path = 'some/path.jpg'
+    image_path = None
 
     api_config = get_api_config(model)
 
