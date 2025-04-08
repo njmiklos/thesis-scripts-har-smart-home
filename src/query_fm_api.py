@@ -1,5 +1,8 @@
 import requests
-from typing import Dict
+import base64   # Used to encode images in base64 format for API transmission
+import mimetypes    # Used to detect the MIME type of an image based on its file extension
+
+from typing import Dict, Optional
 
 from get_env import get_chat_ac_info
 
@@ -11,6 +14,8 @@ def get_api_config(model: str = 'meta-llama-3.1-8b-instruct') -> Dict[str, str]:
 
     Args:
         model (str, optional): The model to use for chat completions. Defaults to 'meta-llama-3.1-8b-instruct'.
+            Other options (08.04.2025): 'internvl2.5-8b', 'c' (DeepSeek R1), 'deepseek-r1-distill-llama-70b',
+            'llama-3.3-70b-instruct'.
 
     Returns:
         Dict[str, str]: A dictionary containing API key, base URL, and model name.
@@ -25,14 +30,48 @@ def get_api_config(model: str = 'meta-llama-3.1-8b-instruct') -> Dict[str, str]:
 
     return api_config
 
-def send_chat_request(api_config: Dict[str, str], prompt: str, user_message: str) -> requests.Response:
+def detect_image_type(image_path: str) -> str:
     """
-    Sends a request to the chat API.
+    Detects the MIME type of an image based on its file extension.
+
+    Args:
+        image_path (str): Path to the image file.
+
+    Returns:
+        str: The MIME type of the image (e.g., 'image/png').
+             Falls back to 'application/octet-stream' if undetectable.
+    """
+    mime_type, _ = mimetypes.guess_type(image_path)
+    if not mime_type:
+        mime_type = 'application/octet-stream'
+    return mime_type
+
+def encode_image_to_base64(image_path: str) -> str:
+    """
+    Encodes an image file into a base64 data URI with MIME type.
+
+    Args:
+        image_path (str): Path to the image file.
+
+    Returns:
+        str: Base64-encoded data URI (e.g., 'data:image/png;base64,...').
+    """
+    mime_type = detect_image_type(image_path)
+
+    with open(image_path, 'rb') as img_file:
+        encoded = base64.b64encode(img_file.read()).decode('utf-8')
+
+    return f'data:{mime_type};base64,{encoded}'
+
+def send_chat_request(api_config: Dict[str, str], prompt: str, user_message: str, image_path: Optional[str] = None) -> requests.Response:
+    """
+    Sends a chat request to the API with optional image input.
 
     Args:
         api_config (Dict[str, str]): The API configuration containing the API key, base URL, and model name.
         prompt (str): The system prompt to set the behavior of the assistant.
         user_message (str): The user's query.
+        image_path (Optional[str]): Optional image file path to include.
 
     Returns:
         requests.Response: The HTTP response object from the API request.
@@ -42,18 +81,27 @@ def send_chat_request(api_config: Dict[str, str], prompt: str, user_message: str
         'Content-Type': 'application/json'
     }
     
-    data = {
+    if image_path:
+        image_data = encode_image_to_base64(image_path)
+        user_content = [
+            {'type': 'text', 'text': user_message},
+            {'type': 'image_url', 'image_url': {'url': image_data}}
+        ]
+    else:
+        user_content = user_message
+
+    payload = {
         'model': api_config['model'],
         'messages': [
             {'role': 'system', 'content': prompt},
-            {'role': 'user', 'content': user_message}
+            {'role': 'user', 'content': user_content}
         ]
     }
     
     system_response = requests.post(
         url=f'{api_config["base_url"]}/chat/completions',
         headers=headers,
-        json=data
+        json=payload
     )
     
     return system_response
@@ -168,12 +216,13 @@ def print_formatted_exchange(user_message: str, system_response: requests.Respon
 
 
 if __name__ == '__main__':
-    model = 'meta-llama-3.1-8b-instruct'
+    model = 'internvl2.5-8b'
     prompt = 'You are a helpful assistant'
-    user_message = 'How tall is the Eiffel tower?'
+    user_message = 'Describe changes in the given measurements over time.'
+    image_path = 'some/path.jpg'
 
     api_config = get_api_config(model)
 
-    system_response = send_chat_request(api_config=api_config, prompt=prompt, user_message=user_message)
+    system_response = send_chat_request(api_config=api_config, prompt=prompt, user_message=user_message, image_path=image_path)
 
     print_formatted_exchange(user_message, system_response)
