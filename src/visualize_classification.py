@@ -34,20 +34,20 @@ def convert_matrix_values_to_percentages(matrix: np.ndarray) -> np.ndarray:
     row_sums[row_sums == 0] = 1  # Prevent division by zero
     return (matrix / row_sums) * 100  # Convert to percentage
 
-def visualize_confusion_matrix(data: dict, model_version: str, output_path: Path) -> None:
+def visualize_confusion_matrix(data: dict[str, dict], model_version: str, output_path: Path) -> None:
     """
     Generate a confusion matrix from JSON data and save it as an image.
 
     Args:
-        data (dict): JSON data containing the confusion matrix.
+       data (dict): A dictionary containing model version keys (e.g., "float32", "int8") with their corresponding evaluation data.
         model_version (str): Model version ("int8" or "float32"), both available in data.
         output_path (Path): Directory path to save the confusion matrix image.
     """
-    if model_version not in data['validation']:
-        raise ValueError(f"Invalid model_version: {model_version}. Choose from: {list(data['validation'].keys())}")
+    if model_version not in data:
+        raise ValueError(f'Invalid model_version: {model_version}. Choose from: {list(data.keys())}')
 
-    conf_matrix = np.array(data['validation'][model_version]['confusion_matrix'])
-    class_names = data['validation'][model_version]['class_names']
+    conf_matrix = np.array(data[model_version]['confusion_matrix'])
+    class_names = data[model_version]['class_names']
 
     conf_matrix_percentage = convert_matrix_values_to_percentages(conf_matrix)
 
@@ -61,12 +61,15 @@ def visualize_confusion_matrix(data: dict, model_version: str, output_path: Path
 
 if __name__ == '__main__':
     # Paths
-    input_file_name = 'episodic-split-only-annotated-data-validation-metrics.json'
+    input_file_name = 'model-routines-testing-results.json'
     input_file_path = get_input_path() / input_file_name
     output_dir_path = get_output_path()
 
     output_dir_path.mkdir(parents=True, exist_ok=True)
 
     report = load_json_file(input_file_path)
-    visualize_confusion_matrix(report, 'float32', output_dir_path)
+
+    # Adjust set and version model if necessary
+    #visualize_confusion_matrix(report['validation'], 'float32', output_dir_path)
+    visualize_confusion_matrix(report['test'], 'float32', output_dir_path)
 
