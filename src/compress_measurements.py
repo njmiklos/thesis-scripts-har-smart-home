@@ -128,6 +128,9 @@ def generate_summary(df: pd.DataFrame) -> str:
     Returns:
         str: Summary of compressed sensor values.
     """
+    if 'annotation' in df.columns:
+        df.drop(columns=['annotation'], inplace=True)
+        
     time_str = get_time(df)
     grouped_data = group_sensor_data(df)
     return format_summary(time_str, grouped_data)
