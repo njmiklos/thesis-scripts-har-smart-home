@@ -9,6 +9,7 @@ from typing import List, Tuple
 
 from get_env import get_input_path, get_output_path
 from handle_csv import read_csv_to_pandas_dataframe, get_all_csv_files_in_directory
+from convert_timestamps import convert_timestamps_from_miliseconds_to_localized_datetime_srs
 
 
 def remove_consecutive_duplicates(series: pd.Series) -> List[float]:
@@ -65,15 +66,16 @@ def parse_column_name(name: str) -> Tuple[str, str]:
 
 def get_time(df: pd.DataFrame) -> str:
     """
-    Extracts the time of day from the first timestamp in the DataFrame.
-
+    Extracts the time of day from the first timestamp in the DataFrame. 
+    
     Args:
-        df (pd.DataFrame): Input DataFrame with a 'time' column.
+        df (pd.DataFrame): Input DataFrame with a 'time' column in miliseconds UTC Europe/Berlin.
 
     Returns:
         str: Time in HH:MM format.
     """
-    first_timestamp = pd.to_datetime(df['time'].iloc[0])
+    df['time'] = convert_timestamps_from_miliseconds_to_localized_datetime_srs(df['time'])
+    first_timestamp = df['time'].iloc[0]
     time_str = first_timestamp.strftime('%H:%M')
     return time_str
 
@@ -130,7 +132,7 @@ def generate_summary(df: pd.DataFrame) -> str:
     """
     if 'annotation' in df.columns:
         df.drop(columns=['annotation'], inplace=True)
-        
+
     time_str = get_time(df)
     grouped_data = group_sensor_data(df)
     return format_summary(time_str, grouped_data)
