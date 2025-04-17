@@ -82,7 +82,7 @@ Once there is a requirements.txt file, you will be able to use pip to install th
 └── 📄 .env               # Environment variables (.gitignored)
 ```
 # 💡 Notes & Philosophy
-- This code is structured based on my thesis needs (e.g., sensor types, locations, sampling rates), so it may not be plug-and-play for others. But hey, that's what academic projects are all about! Full project details will be in my thesis.
+- This code is structured based on my thesis needs (e.g., sensor types, locations, sampling rates), so it may not be plug-and-play for others. Full project details will be in my thesis.
 # 🛡️ License
 The repository is licensed under the MIT License. In short, this means:
 - I retain ownership of the code, but you can use it freely under the MIT terms, and mine.  
