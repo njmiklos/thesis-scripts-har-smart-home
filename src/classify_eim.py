@@ -1,0 +1,132 @@
+"""
+This is based on "classify.py" from https://github.com/edgeimpulse/linux-sdk-python/tree/master/examples/custom
+
+It expects "runner.py" from https://github.com/edgeimpulse/linux-sdk-python/tree/master/edge_impulse_linux 
+as "edge_impulse_runner.py" in the same directory ("src").
+"""
+import numpy as np
+from pathlib import Path
+from typing import List, Dict, Any
+
+from handle_csv import read_csv_to_pandas_dataframe
+from get_env import get_input_path, get_output_path
+from edge_impulse_runner import ImpulseRunner
+
+
+def load_model(model_file_path: Path) -> ImpulseRunner:
+    """
+    Loads an Edge Impulse model from the specified *.eim file.
+
+    Args:
+        model_file_path (Path): Path to the .eim model file.
+
+    Returns:
+        ImpulseRunner: An initialized ImpulseRunner object for classification.
+    """
+    print(f'Loading model from {model_file_path}...')
+    model_file_path_str = str(model_file_path)
+    runner = ImpulseRunner(model_file_path_str)
+
+    model_info = runner.init()
+    # model_info = runner.init(debug=True) # to get debug print out
+    model_owner = model_info['project']['owner']
+    model_name = model_info['project']['name']
+    print(f'Loaded {model_owner}\'s runner \"{model_name}\".')
+
+    return runner
+
+def load_features_from_window(window: str) -> List[float]:
+    """
+    Parses and converts a comma-separated feature window string into a list of floats
+    for a classification with an *.eim model.
+
+    Args:
+        window (str): Comma-separated string of features.
+
+    Returns:
+        List[float]: List of feature values as floats.
+    """
+    features = window.strip().split(',')
+
+    if '0x' in features[0]:
+        features = [float(int(f, 16)) for f in features]
+    else:
+        features = [float(f) for f in features]
+    
+    return features
+
+def classify_window(loaded_model: ImpulseRunner, window: str) -> Dict[str, Any]:
+    """
+    Performs classification on a window of data using a loaded model.
+
+    Args:
+        loaded_model (ImpulseRunner): The initialized model for classification.
+        window (str): Comma-separated string of features.
+
+    Returns:
+        Dict[str, Any]: Classification result and metadata.
+    """
+    features = load_features_from_window(window)
+    classified_window = loaded_model.classify(features)
+    return classified_window
+
+def normalize_probability(probability: float) -> float:
+    """
+    Normalizes the probability value to ensure it is between 0 and 1.
+
+    Args:
+        probability (float): Raw probability value.
+
+    Returns:
+        float: Normalized probability rounded to 4 decimal places.
+    """
+    if probability > 1 or probability < 0:
+        probability = 0.0
+    else:
+        probability = round(probability, 4)
+    return probability
+
+def print_classification_result(classified_window: Dict[str, Any]) -> None:
+    """
+    Prints the classification result in a human-readable format.
+
+    Args:
+        classified_window (Dict[str, Any]): Output from `ImpulseRunner.classify()`.
+    """
+    classification = classified_window['result']
+    #timing = classified_window['timing']
+
+    print('Classification:')
+    for cls, probability in classification['classification'].items():
+        probability = normalize_probability(probability)
+        print(f'- {cls}: {probability}')
+
+    #print('Timing:')
+    #print(timing)
+
+def close_loaded_model(loaded_model):
+    """
+    Stops and cleans up the loaded model if it exists.
+
+    Args:
+        loaded_model (ImpulseRunner | None): The loaded model runner to stop.
+    """
+    if (loaded_model):
+        loaded_model.stop()
+
+if __name__ == '__main__':
+    # Paths
+    input_dir_path = get_input_path()
+    model_file_path = input_dir_path / 'model.eim'
+    output_dir_path = get_output_path()
+    output_dir_path.mkdir(parents=True, exist_ok=True)
+
+    # Some window data
+    window = '''
+    '''
+
+    # Run classification pipeline
+    loaded_model = load_model(model_file_path)
+    classified_window = classify_window(loaded_model, window)
+    print_classification_result(classified_window)
+    close_loaded_model(loaded_model)
