@@ -25,6 +25,10 @@ LOGGING_PATH=/path_to/logs/
 HOST='localhost'
 PORT=8086   # typically
 DATABASE_NAME='name_of_your_database'
+
+# Coommunication with the Chat Academic Cloud API
+CHAT_AC_API_KEY='yourKey'
+CHAT_AC_ENDPOINT='https://chat-ai.academiccloud.de/yourEndpoint'
 ```
 ## 📌 Explanation of Environment Variables
 - `BASE_PATH`: Directory containing all Python files for this project.
@@ -36,6 +40,7 @@ DATABASE_NAME='name_of_your_database'
 - `OUTPUT_PATH`: Directory for storing all output files.
 - `LOGGING_PATH`: Directory for structured logs.
 - My database engine is InfluxDB (version 1.x). The API requires `HOST`, `PORT`, and `DATABASE_NAME`.
+- I used the [Chat Academic Cloud API](https://docs.hpc.gwdg.de/services/saia/index.html) when working with Foundation Models. I needed an API key `CHAT_AC_API_KEY` and an endpoint address `CHAT_AC_ENDPOINT`.
 ## 🚀 Possible Pipeline (WIP, TODO)
 1. Data Collection:
     - Create an Annotation File: List all annotated episodes and parse them using `parse_annotation_file.py` to ensure compatibility with other scripts.
@@ -69,25 +74,20 @@ Once there is a requirements.txt file, you will be able to use pip to install th
 ## 📝 Project Structure (WIP, TODO)
 ```
 📂 thesis-har-smart-home/
-├── 📁 src/               # Python scripts, TODO
-│   ├── databank_api.py   # Data collection from InfluxDB
-│   ├── preprocess.py     # Denoising, resampling, and merging
-│   ├── annotate.py       # Applying labels from annotated episodes
-│   └── visualize.py      # Plotting timeseries and histograms
+├── 📁 src/               # Python scripts
+│   └── ...      
 ├── 📁 inputs/            # Placeholder for datasets (.gitignored)
 ├── 📁 outputs/           # Outputs (.gitignored)
 ├── 📄 README.md          # Project documentation (you are here! Hi!)
 └── 📄 .env               # Environment variables (.gitignored)
 ```
 # 💡 Notes & Philosophy
-- Logging is my friend and I respect returning errors, but I print them instead because I. Am. A. Monster.
 - This code is structured based on my thesis needs (e.g., sensor types, locations, sampling rates), so it may not be plug-and-play for others. But hey, that's what academic projects are all about! Full project details will be in my thesis.
 # 🛡️ License
 The repository is licensed under the MIT License. In short, this means:
 - I retain ownership of the code, but you can use it freely under the MIT terms, and mine.  
-- Honestly, this code is nothing you can't find online, just better documented and less optimized. Feel free to reuse it, modify it, or even train your AI on it.  
-- If you find it helpful and use it in your work, I'd appreciate a shoutout. I like positive attention.
+- This code is nothing you can't find online, just better documented and less optimized. Feel free to reuse it, modify it, or even train your AI on it.  
+- If you find it helpful and use it in your work, I'd appreciate a shoutout. I like positive ✨ attention ✨
 # ❤️ Acknowledgments
 - Technical University of Chemnitz – Professorship of Media Informatics
-- My home for being both smart and creepy.
-- My two cats, for leaving the sensors alone and creating very little noise in the data.
+- The computing time granted by the Resource Allocation Board and provided on the supercomputer Emmy/Grete at NHR-Nord@Göttingen as part of the NHR infrastructure. My thesis used their hosted FM models with [ChatAI](https://docs.hpc.gwdg.de/services/chat-ai/index.html) and [API](https://docs.hpc.gwdg.de/services/saia/index.html).
