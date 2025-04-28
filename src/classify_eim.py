@@ -13,13 +13,13 @@ from edge_impulse_runner import ImpulseRunner
 
 def load_model(model_file_path: Path) -> ImpulseRunner:
     """
-    Loads an Edge Impulse model from the specified *.eim file.
+    Loads an Edge Impulse model from a .eim file.
 
     Args:
         model_file_path (Path): Path to the .eim model file.
 
     Returns:
-        ImpulseRunner: An initialized ImpulseRunner object for classification.
+        ImpulseRunner: Initialized runner for classification tasks.
     """
     print(f'Loading model from {model_file_path}...')
     model_file_path_str = str(model_file_path)
@@ -33,7 +33,7 @@ def load_model(model_file_path: Path) -> ImpulseRunner:
 
     return runner
 
-def load_features_from_window(window: str) -> List[float]:
+def parse_feature_window(window: str) -> List[float]:
     """
     Parses and converts a comma-separated feature window string into a list of floats
     for a classification with an *.eim model.
@@ -64,9 +64,9 @@ def classify_window(loaded_model: ImpulseRunner, window: str) -> Dict[str, Any]:
     Returns:
         Dict[str, Any]: Classification result and metadata.
     """
-    features = load_features_from_window(window)
-    classified_window = loaded_model.classify(features)
-    return classified_window
+    features = parse_feature_window(window)
+    classification_result = loaded_model.classify(features)
+    return classification_result
 
 def normalize_probability(probability: float) -> float:
     """
@@ -84,35 +84,36 @@ def normalize_probability(probability: float) -> float:
         probability = round(probability, 4)
     return probability
 
-def get_highest_prediction(classification_result: Dict[str, Any]) -> Tuple[str, float]:
+def get_top_prediction(classification_result: Dict[str, Any]) -> Tuple[str, float]:
     """
-    Extracts the class with the highest probability from a classificiation result.
+    Gets the class with the highest probability from a classificiation result.
 
     Args:
-        classification_result (Dict[str, Any]): Classification result and metadata.
+        classification_result (Dict[str, Any]): Classification output from the model.
 
     Returns:
-        Tuple[str, float]: Tuple where the first position is the class and the second is its probability.
+        Tuple[str, float]: (class_name, probability)
     """
-    classification = classification_result['result']
+    classification = classification_result['result']['classification']
     cls_highest = ''
     probability_highest = 0.0
-    for cls, probability in classification['classification'].items():
+    for cls, probability in classification.items():
         probability = normalize_probability(probability)
         if probability >= probability_highest:
             cls_highest = cls
             probability_highest = probability
+
     return cls_highest, probability_highest
 
-def print_single_classification_result(classified_window: Dict[str, Any]) -> None:
+def print_classification_summary(classification_result: Dict[str, Any]) -> None:
     """
     Prints the classification result in a human-readable format.
 
     Args:
         classified_window (Dict[str, Any]): Output from `ImpulseRunner.classify()`.
     """
-    classification = classified_window['result']
-    timing = classified_window['timing']
+    classification = classification_result['result']
+    timing = classification_result['timing']
 
     print('Classification:')
     for cls, probability in classification['classification'].items():
@@ -147,7 +148,7 @@ if __name__ == '__main__':
 
     # Run classification pipeline
     loaded_model = load_model(model_file_path)
-    classified_window = classify_window(loaded_model, window)
-    print_single_classification_result(classified_window)
-    print(f'Highest scored class: {get_highest_prediction(classified_window)}')
+    classification_result = classify_window(loaded_model, window)
+    print_classification_summary(classification_result)
+    print(f'Highest scored class: {get_top_prediction(classification_result)}')
     close_loaded_model(loaded_model)
