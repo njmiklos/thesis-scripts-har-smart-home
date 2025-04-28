@@ -115,47 +115,18 @@ def remove_columns(df: pd.DataFrame, columns: List[str]) -> pd.DataFrame:
         df = remove_column(df, col)
     return df
 
-
-if __name__ == '__main__':
-    database_input_file = 'synchronized_merged_selected_annotated.csv'
-    database_input_file_path = get_input_path() / 'Synchronized_annotated' / database_input_file
-    database_output_file = 'synchronized_merged_selected_annotated_filtered.csv'
-    database_output_file_path = get_output_path() / database_output_file
-
-    # Annotations
+def select_columns(df: pd.DataFrame, relevant_columns: List[str]) -> pd.DataFrame:
     """
-    classes = {'airing', 'preparing for bed', 'sleeping', 'getting up', 'working out', 
-        'preparing breakfast', 'eating breakfast', 'preparing dinner', 'eating dinner', 
-        'preparing supper', 'eating supper', 'preparing a drink', 'working', 'relaxing', 
-        'leaving home', 'entering home', 'preparing a meal', 'eating a meal'}
-    transition_activities = {'getting up', 'leaving home', 'entering home', 'preparing for bed', 'airing'}
+    Keeps only the specified columns from the DataFrame, dropping all others.
+    It raises an error if any of the specified columns do not exist in the DataFrame.
+
+    Args:
+        df (pd.DataFrame): The input DataFrame containing the data.
+        relevant_columns (List[str]): A list of column names to keep.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing only the specified columns that exist in the original DataFrame.
     """
-
-    # Adjust before running
-    df = read_csv_to_pandas_dataframe(database_input_file_path)
-    df = remove_rows_with_annotation(df, 'other')
-    save_pandas_dataframe_to_csv(df, database_output_file_path)
-
-    # Filter file
-    """
-    df = read_csv_to_pandas_dataframe(dataset_file)
-    columns = ['d1 hygrometer temperature', 'd1 motion_magnitude mag', 'd1 thermometer objectTemperature',
-       'd2 hygrometer temperature', 'd2 motion_magnitude mag', 'd2 thermometer objectTemperature',
-       'd3 hygrometer temperature', 'd3 motion_magnitude mag', 'd3 thermometer objectTemperature']
-    df = remove_columns(df, columns)
-    save_pandas_dataframe_to_csv(df, new_dataset_file)
-    """
-    # Dataset
-    """
-    files = get_all_csv_files_in_directory(base_path / 'some_dir')
-
-    for path in files:
-        print(path)
-
-        df = read_csv_to_pandas_dataframe(path)
-
-        df = filter_by_date(df, '2024-12-08')
-        df = filter_by_time_range(df, '08:55:52+01:00', '08:56:00+01:00')
-
-        save_pandas_dataframe_to_csv(df, path)
-    """
+    if relevant_columns:
+        df = df[relevant_columns]
+    return df
