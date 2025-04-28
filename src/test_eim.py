@@ -13,6 +13,7 @@ import tracemalloc
 from typing import List, Tuple, Optional
 from pathlib import Path
 
+from edge_impulse_runner import ImpulseRunner
 from get_env import get_input_path, get_output_path
 from handle_csv import read_csv_to_pandas_dataframe, get_all_csv_files_in_directory
 from classify_eim import load_model, close_loaded_model, classify_window, get_top_prediction
@@ -70,7 +71,7 @@ def validate_input(total_rows: int, window_size: int, overlap_size: int) -> bool
 
     return True
 
-def classify_window_by_window(df: pd.DataFrame, window_size: int, overlap_size: int, model_file_path: Path, relevant_columns: Optional[List[str]]) -> Optional[Tuple[List[str], List[str]]]:
+def classify_window_by_window(df: pd.DataFrame, window_size: int, overlap_size: int, loaded_model: ImpulseRunner, relevant_columns: Optional[List[str]]) -> Optional[Tuple[List[str], List[str]]]:
     """
     Segments a DataFrame into overlapping windows and classifies each.
 
@@ -78,7 +79,7 @@ def classify_window_by_window(df: pd.DataFrame, window_size: int, overlap_size: 
         df (pd.DataFrame): The input DataFrame containing the data to be segmented.
         window_size (int): The number of rows in each segmented window.
         overlap_size (int): The number of overlapping rows between consecutive windows.
-        model_file_path (Path): Path to the .eim model file.
+        loaded_model (ImpulseRunner): Loaded .eim model.
         relevant_columns (Optional[List[str]]): The list of columns expected by the model, all other are dropped.
 
     Returns:
@@ -90,8 +91,6 @@ def classify_window_by_window(df: pd.DataFrame, window_size: int, overlap_size: 
     if input_valid:
         predicted_annotations = list()
         actual_annotations = list()
-
-        loaded_model = load_model(model_file_path)
 
         start_position = 0
         segment_count = 1
@@ -105,13 +104,11 @@ def classify_window_by_window(df: pd.DataFrame, window_size: int, overlap_size: 
 
             formatted_window = format_window_for_classification(window, relevant_columns)
             classification_result = classify_window(loaded_model, formatted_window)
-            prediction = get_top_prediction(classification_result)
-            predicted_annotations.append(prediction)
+            prediction_class, _ = get_top_prediction(classification_result)
+            predicted_annotations.append(prediction_class)
             
             start_position += (window_size - overlap_size)
             segment_count += 1
-
-        close_loaded_model(loaded_model)
 
         return actual_annotations, predicted_annotations
 
@@ -131,7 +128,7 @@ def generate_report(output_dir_path: Path, actual_annotations: List[str], predic
     c_matrix = confusion_matrix(actual_annotations, predicted_annotations, labels=classes)
     accuracy = accuracy_score(actual_annotations, predicted_annotations)
     #area_under_roc_curve = roc_curve(actual_annotations, predicted_annotations)
-    weighted_avg_precision = average_precision_score(actual_annotations, predicted_annotations, average='weighted')
+    #weighted_avg_precision = average_precision_score(actual_annotations, predicted_annotations, average='weighted')
     weighted_avg_recall = recall_score(actual_annotations, predicted_annotations, average='weighted')
     weighted_avg_f1_score = f1_score(actual_annotations, predicted_annotations, average='weighted')
 
@@ -139,7 +136,7 @@ def generate_report(output_dir_path: Path, actual_annotations: List[str], predic
     matrix_str = '\n'.join(['\t'.join(map(str, row)) for row in c_matrix])
     report.append(f'Matrix:\n{matrix_str}')
     report.append(f'Accuracy: {accuracy}')
-    report.append(f'Weighted Avg. Precision: {weighted_avg_precision}')
+    #report.append(f'Weighted Avg. Precision: {weighted_avg_precision}')
     report.append(f'Weighted Avg. Recall: {weighted_avg_recall}')
     report.append(f'Weighted Avg. F1 Score: {weighted_avg_f1_score}')
     report.append(f'Classification Time (s): {total_time_seconds}')
@@ -172,6 +169,8 @@ def process_files(window_size: int, window_overlap: int, model_file_path: Path, 
     files = get_all_csv_files_in_directory(input_dir_path)
     predicted_annotations = list()
     actual_annotations = list()
+    
+    loaded_model = load_model(model_file_path)
 
     start_time = time.perf_counter()
     tracemalloc.start()
@@ -179,7 +178,7 @@ def process_files(window_size: int, window_overlap: int, model_file_path: Path, 
     for file in files:
         print(f'Processing file {file}...')
         episode_df = read_csv_to_pandas_dataframe(file)
-        ep_actual_annotations, ep_predicted_annotations = classify_window_by_window(episode_df, window_size, window_overlap, model_file_path, relevant_columns)
+        ep_actual_annotations, ep_predicted_annotations = classify_window_by_window(episode_df, window_size, window_overlap, loaded_model, relevant_columns)
         
         actual_annotations.extend(ep_actual_annotations)
         predicted_annotations.extend(ep_predicted_annotations)
@@ -190,6 +189,8 @@ def process_files(window_size: int, window_overlap: int, model_file_path: Path, 
     _, peak_memory_bytes = tracemalloc.get_traced_memory()
     tracemalloc.stop()
     peak_memory_mb = peak_memory_bytes / (1024 * 1024)
+
+    close_loaded_model(loaded_model)
 
     generate_report(output_dir_path, actual_annotations, predicted_annotations, classes, total_time_seconds, peak_memory_mb)
 
