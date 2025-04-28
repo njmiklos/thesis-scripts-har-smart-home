@@ -1,7 +1,11 @@
+"""
+This code segments an annotated dataset into windows, classifies them, and summarizes the results
+to test a model.
+"""
 import pandas as pd
 from sklearn.metrics import confusion_matrix
 
-from typing import List, Tuple
+from typing import List, Tuple, Any
 from pathlib import Path
 
 from get_env import get_input_path, get_output_path
@@ -10,17 +14,24 @@ from classify_eim import load_model, close_loaded_model, classify_window
 
 
 def init_confusion_matrix(actual_annotations: List[str], predicted_annotations: List[str], classes: List[str]):
-    confusion_matrix(actual_annotations, predicted_annotations, labels=classes)
+    confusion_matrix = confusion_matrix(actual_annotations, predicted_annotations, labels=classes)
     return confusion_matrix
 
-def format_window_for_classification (df: pd.DataFrame):
-    # remove annotation column
-    # create a long csv string of all
-    pass
+def format_window_for_classification(df: pd.DataFrame) -> List[Any]:
+    """
+    Flattens a DataFrame into a single Python list.
 
-def get_single_best_prediction(classification_result):
-    # extract a single most likely label
-    pass
+    - .values gives a 2D NumPy array
+    - .ravel() flattens it
+    - .tolist() turns it into a Python list
+
+    Args:
+        df (pd.DataFrame): The input DataFrame containing the data of a single window to be classified.
+
+    Returns:
+        List[Any]: A flattened list of integers and floats to be classified.
+    """
+    return df.values.ravel().tolist()
 
 def validate_input(total_rows: int, window_size: int, overlap_size: int) -> bool:
     if total_rows == 0:
