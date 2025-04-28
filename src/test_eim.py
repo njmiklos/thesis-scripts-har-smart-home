@@ -4,8 +4,8 @@ The purpose is to test an EI model locally.
 
 It is recommended to first segment the dataset into episodes. This ensures that less data is loaded into memory at once.
 
-The data is expected to contain only those columns that were used in training (e.g., if the time column was not
-used for training the model, it should be excluded from the data used for the inference as well).
+The data is expected to contain only those columns that were used in training, 
+except for the timestamp column and the annotation column.
 """
 import pandas as pd
 from sklearn.metrics import confusion_matrix, accuracy_score, average_precision_score, f1_score, roc_curve, recall_score
@@ -42,6 +42,11 @@ def format_window_for_classification(df: pd.DataFrame) -> List[float]:
         - .tolist() turns it into a Python list
         - the elements are casted into floats
     """
+    if 'time' in df.columns: 
+        df = df.drop(columns=['time'])
+    if 'annotation' in df.columns: 
+        df = df.drop(columns=['annotation'])
+
     flattened_features = df.values.ravel().tolist()
     features = [float(f) for f in flattened_features]
     return features
@@ -102,7 +107,7 @@ def classify_window_by_window(df: pd.DataFrame, window_size: int, overlap_size: 
 
             window = df.iloc[start_position : end_position]
 
-            last_annotation = window['annotation'].iloc[-1] # TODO
+            last_annotation = window['annotation'].iloc[-1]
             actual_annotations.append(last_annotation)
 
             formatted_window = format_window_for_classification(window)
@@ -131,20 +136,20 @@ def save_report_to_json_file(output_dir_path: Path, report: dict, output_file_na
         json.dump(report, f, indent=4)
 
 def generate_report(actual_annotations: List[str], predicted_annotations: List[str], 
-                    classes: Tuple[str], total_time_seconds: float, peak_memory_mb: float) -> dict:
+                    total_time_seconds: float, peak_memory_mb: float) -> dict:
     """
     Generates and saves a report based on classification results.
 
     Args:
         actual_annotations (List[str]): List of actual annotation labels.
         predicted_annotations (List[str]): List of predicted annotation labels.
-        classes (List[str]): List of all class labels.
         total_time_seconds (float): Time in seconds needed for the classification process.
         peak_memory_mb (float): Peak memory in MB during the classification process.
 
     Returns:
         dict: The report containing all metrics and confusion matrix.
     """
+    classes = list(set(actual_annotations))
     c_matrix = confusion_matrix(actual_annotations, predicted_annotations, labels=classes)
     accuracy = accuracy_score(actual_annotations, predicted_annotations)
     #area_under_roc_curve = roc_curve(actual_annotations, predicted_annotations)
@@ -163,7 +168,7 @@ def generate_report(actual_annotations: List[str], predicted_annotations: List[s
 
     return report
 
-def process_files(window_size: int, window_overlap: int, model_file_path: Path, classes: Tuple[str], input_dir_path: Path, output_dir_path) -> None:
+def process_files(window_size: int, window_overlap: int, model_file_path: Path, input_dir_path: Path, output_dir_path) -> None:
     """
     Processes all CSV files in the input directory by segmenting them into windows,
     classifying the windows, and generating a classficiation result in the output directory.
@@ -172,7 +177,6 @@ def process_files(window_size: int, window_overlap: int, model_file_path: Path, 
         window_size (int): The number of rows in each segmented window.
         overlap_size (int): The number of overlapping rows between consecutive windows.
         model_file_path (Path): Path to the .eim model file.
-        classes (Tuple[str]): Classes meant to be classified by the selected model.
         input_dir (Path): Directory containing input CSV files.
         output_dir (Path): Directory to write output files.
     
@@ -205,7 +209,7 @@ def process_files(window_size: int, window_overlap: int, model_file_path: Path, 
 
     close_loaded_model(loaded_model)
 
-    report = generate_report(actual_annotations, predicted_annotations, classes, total_time_seconds, peak_memory_mb)
+    report = generate_report(actual_annotations, predicted_annotations, total_time_seconds, peak_memory_mb)
     save_report_to_json_file(output_dir_path, report)
 
 if __name__ == '__main__':
@@ -214,13 +218,10 @@ if __name__ == '__main__':
     window_overlap = 37
     model_file_name = 'single-model-approach-linux-x86_64-v5.eim'
 
-    # Classes
-    classes = ('getting up', 'leaving home', 'entering home', 'preparing for bed', 'airing', 'sleeping', 'working', 'working out', 'relaxing', 'preparing breakfast', 'eating breakfast', 'preparing dinner', 'eating dinner', 'preparing supper', 'eating supper', 'preparing a drink', 'preparing a meal', 'eating a meal', 'other')
-
     # Paths
     input_dir_path = get_input_path()
     output_dir_path = get_output_path()
     output_dir_path.mkdir(parents=True, exist_ok=True)
     model_file_path = input_dir_path / model_file_name
 
-    process_files(window_size, window_overlap, model_file_path, classes, input_dir_path, output_dir_path)
+    process_files(window_size, window_overlap, model_file_path, input_dir_path, output_dir_path)
