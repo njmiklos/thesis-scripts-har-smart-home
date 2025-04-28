@@ -5,7 +5,7 @@ It expects "runner.py" from https://github.com/edgeimpulse/linux-sdk-python/tree
 as "edge_impulse_runner.py" in the same directory ("src").
 """
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 
 from get_env import get_input_path, get_output_path
 from edge_impulse_runner import ImpulseRunner
@@ -84,6 +84,26 @@ def normalize_probability(probability: float) -> float:
         probability = round(probability, 4)
     return probability
 
+def get_highest_prediction(classification_result: Dict[str, Any]) -> Tuple[str, float]:
+    """
+    Extracts the class with the highest probability from a classificiation result.
+
+    Args:
+        classification_result (Dict[str, Any]): Classification result and metadata.
+
+    Returns:
+        Tuple[str, float]: Tuple where the first position is the class and the second is its probability.
+    """
+    classification = classification_result['result']
+    cls_highest = ''
+    probability_highest = 0.0
+    for cls, probability in classification['classification'].items():
+        probability = normalize_probability(probability)
+        if probability >= probability_highest:
+            cls_highest = cls
+            probability_highest = probability
+    return cls_highest, probability_highest
+
 def print_single_classification_result(classified_window: Dict[str, Any]) -> None:
     """
     Prints the classification result in a human-readable format.
@@ -129,4 +149,5 @@ if __name__ == '__main__':
     loaded_model = load_model(model_file_path)
     classified_window = classify_window(loaded_model, window)
     print_single_classification_result(classified_window)
+    print(f'Highest scored class: {get_highest_prediction(classified_window)}')
     close_loaded_model(loaded_model)
