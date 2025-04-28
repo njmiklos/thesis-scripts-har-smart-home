@@ -66,8 +66,8 @@ def validate_input(total_rows: int, window_size: int, overlap_size: int) -> bool
     if total_rows == 0:
         raise ValueError('The input DataFrame is empty. There is no data to segment.')
     
-    if window_size > total_rows:
-        raise ValueError(f'Window size {window_size} is larger than total number of input rows {total_rows}.')
+    if window_size > total_rows:    # Window to be skipped
+        return False
     
     if window_size < 1:
         raise ValueError(f'Invalid window size: {window_size}. A segment must contain at least one row.')
@@ -80,7 +80,7 @@ def validate_input(total_rows: int, window_size: int, overlap_size: int) -> bool
 
     return True
 
-def classify_window_by_window(df: pd.DataFrame, window_size: int, overlap_size: int, loaded_model: ImpulseRunner) -> Optional[Tuple[List[str], List[str]]]:
+def classify_window_by_window(df: pd.DataFrame, window_size: int, overlap_size: int, loaded_model: ImpulseRunner) -> Tuple[Optional[List[str]], Optional[List[str]]]:
     """
     Segments a DataFrame into overlapping windows and classifies each.
 
@@ -91,11 +91,13 @@ def classify_window_by_window(df: pd.DataFrame, window_size: int, overlap_size: 
         loaded_model (ImpulseRunner): Loaded .eim model.
 
     Returns:
-        Tuple[List[str], List[str]]: If input is valid, a Tuple with actual and predicted annotations for all windows.
+        Tuple[Optional[List[str]], Optional[List[str]]]: If input is valid, a Tuple with actual and predicted annotations 
+            for all windows. Empty otherwise.
     """
     total_rows = len(df)
 
     input_valid = validate_input(total_rows, window_size, overlap_size)
+
     if input_valid:
         predicted_annotations = list()
         actual_annotations = list()
@@ -119,6 +121,8 @@ def classify_window_by_window(df: pd.DataFrame, window_size: int, overlap_size: 
             segment_count += 1
 
         return actual_annotations, predicted_annotations
+
+    return None, None
 
 def save_report_to_json_file(output_dir_path: Path, report: dict, output_file_name: str = 'classification_report.json'):
     """
@@ -197,8 +201,9 @@ def process_files(window_size: int, window_overlap: int, model_file_path: Path, 
         episode_df = read_csv_to_pandas_dataframe(file)
         ep_actual_annotations, ep_predicted_annotations = classify_window_by_window(episode_df, window_size, window_overlap, loaded_model)
         
-        actual_annotations.extend(ep_actual_annotations)
-        predicted_annotations.extend(ep_predicted_annotations)
+        if ep_actual_annotations and ep_predicted_annotations:
+            actual_annotations.extend(ep_actual_annotations)
+            predicted_annotations.extend(ep_predicted_annotations)
 
     end_time = time.perf_counter()
     total_time_seconds = end_time - start_time
