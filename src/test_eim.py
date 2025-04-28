@@ -1,6 +1,6 @@
 """
-This code segments an annotated dataset into windows, classifies them, and summarizes the results
-to test a model.
+This code segments an annotated dataset into windows, classifies them, 
+and summarizes the results. The purpose is to test an EI model locally.
 """
 import pandas as pd
 from sklearn.metrics import confusion_matrix
@@ -10,14 +10,14 @@ from pathlib import Path
 
 from get_env import get_input_path, get_output_path
 from handle_csv import read_csv_to_pandas_dataframe
-from classify_eim import load_model, close_loaded_model, classify_window
+from classify_eim import load_model, close_loaded_model, classify_window, get_top_prediction
 
 
 def init_confusion_matrix(actual_annotations: List[str], predicted_annotations: List[str], classes: List[str]):
     confusion_matrix = confusion_matrix(actual_annotations, predicted_annotations, labels=classes)
     return confusion_matrix
 
-def format_window_for_classification(df: pd.DataFrame) -> List[Any]:
+def format_window_for_classification(df: pd.DataFrame) -> List[float]:
     """
     Flattens a DataFrame into a single Python list.
 
@@ -29,9 +29,11 @@ def format_window_for_classification(df: pd.DataFrame) -> List[Any]:
         df (pd.DataFrame): The input DataFrame containing the data of a single window to be classified.
 
     Returns:
-        List[Any]: A flattened list of integers and floats to be classified.
+        List[Any]: A flattened list of floats to be classified.
     """
-    return df.values.ravel().tolist()
+    flattened_features = df.values.ravel().tolist()
+    features = [float(f) for f in flattened_features]
+    return features
 
 def validate_input(total_rows: int, window_size: int, overlap_size: int) -> bool:
     if total_rows == 0:
@@ -85,7 +87,7 @@ def classify_window_by_window(df: pd.DataFrame, window_size: int, overlap_size: 
 
             formatted_window = format_window_for_classification(window)
             classification_result = classify_window(loaded_model, formatted_window)
-            prediction = get_single_best_prediction(classification_result)
+            prediction = get_top_prediction(classification_result)
             predicted_annotations.append(prediction)
             
             start_position += (window_size - overlap_size)
