@@ -4,3 +4,4 @@ outputs
 inputs
 drafts
 __pycache__
+edge_impulse_runner.py
