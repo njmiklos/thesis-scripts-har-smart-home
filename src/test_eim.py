@@ -216,6 +216,23 @@ def save_report_to_json_file(output_dir_path: Path, report: dict, output_file_na
     with open(output_path, 'w') as f:
         json.dump(report, f, indent=4)
 
+def infer_classes(actual_annotations: List[str], predicted_annotations: List[str]) -> List[str]:
+    """
+    Infer the full set of class labels from ground-truth and predicted annotations.
+
+    Args:
+        actual_annotations (List[str]): The ground-truth annotations.
+        predicted_annotations (List[str]): The predicted annotations.
+
+    Returns:
+        List[str]: A sorted list of unique annotations.
+    """
+    unique_actual = set(actual_annotations)
+    unique_predicted = set(predicted_annotations)
+    all_labels = unique_actual.union(unique_predicted)
+    classes = sorted(all_labels)
+    return classes
+
 def generate_report(results: 'ClassificationResults') -> dict:
     """
     Generates a performance report from the aggregated classification results.
@@ -236,14 +253,14 @@ def generate_report(results: 'ClassificationResults') -> dict:
     predicted_annotations = results.predicted_annotations
     max_classification_time_ms = results.max_classification_time_ms
     max_classification_memory_kb = results.max_classification_memory_kb
+    classes = infer_classes(actual_annotations, predicted_annotations)
 
-    classes = list(set(actual_annotations))
     c_matrix = confusion_matrix(actual_annotations, predicted_annotations, labels=classes)
     accuracy = accuracy_score(actual_annotations, predicted_annotations)
     #area_under_roc_curve = roc_curve(actual_annotations, predicted_annotations)
     #weighted_avg_precision = average_precision_score(actual_annotations, predicted_annotations, average='weighted')
-    weighted_avg_recall = recall_score(actual_annotations, predicted_annotations, average='weighted')
-    weighted_avg_f1 = f1_score(actual_annotations, predicted_annotations, average='weighted')
+    weighted_avg_recall = recall_score(actual_annotations, predicted_annotations, average='weighted', labels=classes)
+    weighted_avg_f1 = f1_score(actual_annotations, predicted_annotations, average='weighted', labels=classes)
 
     return {
         'confusion_matrix': c_matrix.tolist(),
