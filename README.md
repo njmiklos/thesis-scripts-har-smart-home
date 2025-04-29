@@ -10,14 +10,7 @@ This repository covers working with timeseries sensor data in preparation for a 
 - 📊 Data Analysis & Visualization: Generating statistical summaries based on annotated episodes, creating scatter plots, timeseries graphs, and histograms from sensor readings.
 - 🏷️ Data Annotation: Annotating sensor data using predefined episodes.
 - 📁 File Management: Splitting timeseries data into daily or episodic segments.
-# 🛎️ Technical Information
-## 🐍 Installing Dependencies
-- Optional, recommended: Create and activate a virtual environment of your choice.
-- Optional, recommended: Upgrade pip with `pip install --upgrade pip`.
-- Navigate to the project's root directory: `cd thesis-scripts-har-smart-home`.
-- Install all required packages: `pip install -r requirements.txt`.
-- Optional, recommended: Verify the installation with `pip list`.
-## 📝 Project Structure (WIP, TODO)
+# 📝 Project Structure
 ```
 📂 thesis-scripts-har-smart-home/
 ├── 📁 src/               # Python scripts
@@ -30,8 +23,16 @@ This repository covers working with timeseries sensor data in preparation for a 
 └── 📄 requirements.txt   # List of dependencies
 ```
 # 🛠️ Usage Instructions
+## 1. Install Dependencies
+There are a couple of libraries I have used. You will need them too in order to run the scripts.
+1. Optional, recommended: Create and activate a virtual environment of your choice.
+2. Optional, recommended: Upgrade pip with `pip install --upgrade pip`.
+3. Navigate to the project's root directory: `cd thesis-scripts-har-smart-home`.
+4. Install all required packages: `pip install -r requirements.txt`.
+5. Optional, recommended: Verify the installation with `pip list`.
+## 2. Create an .env File
 To run the scripts, you must create a .env file with environment variables for paths and database credentials. The .env file is not included in this repository to protect privacy and security.
-## 🗂️ .env File Example
+### .env File Example
 ```
 # Directory Paths
 BASE_PATH=/module_path/
@@ -49,7 +50,7 @@ DATABASE_NAME='name_of_your_database'
 CHAT_AC_API_KEY='yourKey'
 CHAT_AC_ENDPOINT='https://chat-ai.academiccloud.de/yourEndpoint'
 ```
-## 📌 Explanation of Environment Variables
+### Explanation of Variables in the .env File
 - `BASE_PATH`: Directory containing all Python files for this project.
 - `DATA_PATH`: Directory containing database files (e.g., .csv files with annotations or sensor data).
 - `ANNOTATIONS_FILE_PATH`: Path to a .csv file with annotated episodes. Every episode is a row. It must include the following columns:
@@ -60,7 +61,8 @@ CHAT_AC_ENDPOINT='https://chat-ai.academiccloud.de/yourEndpoint'
 - `LOGGING_PATH`: Directory for structured logs.
 - My database engine is InfluxDB (version 1.x). The API requires `HOST`, `PORT`, and `DATABASE_NAME`.
 - I used the [Chat Academic Cloud API](https://docs.hpc.gwdg.de/services/saia/index.html) when working with Foundation Models. I needed an API key `CHAT_AC_API_KEY` and an endpoint address `CHAT_AC_ENDPOINT`.
-## Running Scripts
+## 2. Run Scripts
+Once you have an .env file:
 1. Set your working directory to `thesis-scripts-har-smart-home/src`
 Open your terminal in `thesis-scripts-har-smart-home/src` or run `cd /path/to/thesis-scripts-har-smart-home/src`.
 2. Invoke the script as a module
@@ -70,7 +72,7 @@ Run: `python3 -m {subdirectory}.{module}`.
 
 Example 1: If I wanted to run `src/get_env.py`, I would run: `python3 -m get_env`. 
 Example 2: If I wanted to run `src/ei_tools/classify_eim.py`, I would run: `python3 -m ei_tools.classify_eim`.
-## 🚀 Possible Pipeline (WIP, TODO)
+# 🚀 Example Pipeline (WIP, TODO)
 1. Data Collection:
     - Create an Annotation File: List all annotated episodes and parse them using `parse_annotation_file.py` to ensure compatibility with other scripts.
     - Download Sensor Data: Retrieve data from your InfluxDB instance and export it to .csv files using scripts in the `databank_communication` directory.
