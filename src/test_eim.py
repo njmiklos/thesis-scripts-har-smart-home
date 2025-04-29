@@ -8,6 +8,7 @@ The data is expected to contain only those columns that were used in training,
 except for the timestamp column and the annotation column.
 """
 import pandas as pd
+import numpy as np
 from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, f1_score, recall_score
 import time
 import tracemalloc
@@ -20,6 +21,8 @@ from edge_impulse_runner import ImpulseRunner
 from get_env import get_input_path, get_output_path
 from handle_csv import read_csv_to_pandas_dataframe, get_all_csv_files_in_directory
 from classify_eim import load_model, close_loaded_model, classify_window, get_top_prediction
+from visualize_ei_reports import convert_matrix_values_to_percentages
+from visualize_data import generate_confusion_matrix
 
 
 class ClassificationResults:
@@ -233,6 +236,19 @@ def infer_classes(actual_annotations: List[str], predicted_annotations: List[str
     classes = sorted(all_labels)
     return classes
 
+def visualize_confusion_matrix(output_dir_path: Path, classes: List[str], confusion_matrix: List[List[int]]) -> None:
+    """
+    Generate a confusion matrix from JSON data and save it as an image.
+
+    Args:
+        classes (List[str]): A sorted list of unique true and false annotations.
+        confusion_matrix (List[List[int]]): Confusion matrix between true and predicted labels.
+    """
+    confusion_matrix_array = np.array(confusion_matrix)
+    conf_matrix_percentage = convert_matrix_values_to_percentages(confusion_matrix_array)
+
+    generate_confusion_matrix(conf_matrix_percentage, classes, output_dir_path)
+
 def generate_report(results: 'ClassificationResults') -> dict:
     """
     Generates a performance report from the aggregated classification results.
@@ -309,6 +325,7 @@ def process_files(window_size: int, window_overlap: int, model_file_path: Path, 
     close_loaded_model(loaded_model)
 
     report = generate_report(complete_results)
+    visualize_confusion_matrix(output_dir_path, report['classes'], report['confusion_matrix'])
     save_report_to_json_file(output_dir_path, report)
 
 
