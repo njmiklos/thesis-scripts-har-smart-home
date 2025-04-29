@@ -10,6 +10,25 @@ This repository covers working with timeseries sensor data in preparation for a 
 - 📊 Data Analysis & Visualization: Generating statistical summaries based on annotated episodes, creating scatter plots, timeseries graphs, and histograms from sensor readings.
 - 🏷️ Data Annotation: Annotating sensor data using predefined episodes.
 - 📁 File Management: Splitting timeseries data into daily or episodic segments.
+# 🛎️ Technical Information
+## 🐍 Installing Dependencies
+- Optional, recommended: Create and activate a virtual environment of your choice.
+- Optional, recommended: Upgrade pip with `pip install --upgrade pip`.
+- Navigate to the project's root directory: `cd thesis-scripts-har-smart-home`.
+- Install all required packages: `pip install -r requirements.txt`.
+- Optional, recommended: Verify the installation with `pip list`.
+## 📝 Project Structure (WIP, TODO)
+```
+📂 thesis-scripts-har-smart-home/
+├── 📁 src/               # Python scripts
+│   └── ...      
+├── 📁 inputs/            # Inputs to be processed or helping in processing (.gitignored)
+├── 📁 outputs/           # Placed for processed files (.gitignored)
+├── 📄 .env               # Environment variables (.gitignored)
+├── 📄 LICENSE            # Terms of use
+├── 📄 README.md          # Project documentation (you are here! Hi!)
+└── 📄 requirements.txt   # List of dependencies
+```
 # 🛠️ Usage Instructions
 To run the scripts, you must create a .env file with environment variables for paths and database credentials. The .env file is not included in this repository to protect privacy and security.
 ## 🗂️ .env File Example
@@ -41,6 +60,16 @@ CHAT_AC_ENDPOINT='https://chat-ai.academiccloud.de/yourEndpoint'
 - `LOGGING_PATH`: Directory for structured logs.
 - My database engine is InfluxDB (version 1.x). The API requires `HOST`, `PORT`, and `DATABASE_NAME`.
 - I used the [Chat Academic Cloud API](https://docs.hpc.gwdg.de/services/saia/index.html) when working with Foundation Models. I needed an API key `CHAT_AC_API_KEY` and an endpoint address `CHAT_AC_ENDPOINT`.
+## Running Scripts
+1. Set your working directory to `thesis-scripts-har-smart-home/src`
+Open your terminal in `thesis-scripts-har-smart-home/src` or run `cd /path/to/thesis-scripts-har-smart-home/src`.
+2. Invoke the script as a module
+Run: `python3 -m {subdirectory}.{module}`. 
+- Omit the `.py` extension.
+- For top-level scripts (placed directly in `src/`), there is no subdirectory, so simply run: `python3 -m {module}`.
+
+Example 1: If I wanted to run `src/get_env.py`, I would run: `python3 -m get_env`. 
+Example 2: If I wanted to run `src/ei_tools/classify_eim.py`, I would run: `python3 -m ei_tools.classify_eim`.
 ## 🚀 Possible Pipeline (WIP, TODO)
 1. Data Collection:
     - Create an Annotation File: List all annotated episodes and parse them using `parse_annotation_file.py` to ensure compatibility with other scripts.
@@ -56,31 +85,6 @@ CHAT_AC_ENDPOINT='https://chat-ai.academiccloud.de/yourEndpoint'
 7. Data Segmentation & Balancing with `separate_into_episodes.py`
     - Segment Data: Split timeseries into episodes, e.g., daily or activity-based segments.
     - Balance Classes: Adjust for imbalanced activity distributions (e.g., too many ‘sleeping' episodes, not enough ‘cooking').
-# 🛎️ Technical Information
-## 💻 Dependencies
-This project relies on the following Python modules:
-```
-python
-pandas
-matplotlib
-numpy
-pathlib
-typing
-logging
-time
-```
-## 🐍 Installing Dependencies (WIP, TODO)
-Once there is a requirements.txt file, you will be able to use pip to install the required modules with `pip install -r requirements.txt`
-## 📝 Project Structure (WIP, TODO)
-```
-📂 thesis-har-smart-home/
-├── 📁 src/               # Python scripts
-│   └── ...      
-├── 📁 inputs/            # Placeholder for datasets (.gitignored)
-├── 📁 outputs/           # Outputs (.gitignored)
-├── 📄 README.md          # Project documentation (you are here! Hi!)
-└── 📄 .env               # Environment variables (.gitignored)
-```
 # 💡 Notes & Philosophy
 - This code is structured based on my thesis needs (e.g., sensor types, locations, sampling rates), so it may not be plug-and-play for others. Full project details will be in my thesis.
 # 🛡️ License
