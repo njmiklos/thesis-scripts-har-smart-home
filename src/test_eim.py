@@ -260,7 +260,7 @@ def update_results(complete_results: dict, episode_classification_results: dict)
     episode_max_classification_time_ms = episode_classification_results['max_classification_time_ms']
     episode_max_classification_memory_kb = episode_classification_results['max_classification_memory_kb']
     max_classification_time_ms = max(episode_max_classification_time_ms, complete_results['max_classification_time_ms'])
-    max_classification_memory_kb = max(episode_max_classification_memory_kb, complete_results['max_classification_time_ms'])
+    max_classification_memory_kb = max(episode_max_classification_memory_kb, complete_results['max_classification_memory_kb'])
 
     return {
         'actual_annotations': complete_results['actual_annotations'], 
