@@ -110,6 +110,46 @@ def stop_trace(start_time: float) -> Tuple[float, float]:
     peak_kb = peak_bytes / 1024
     return elapsed_ms, peak_kb
 
+def update_results(complete_results: dict, subresults: dict) -> dict:
+    """
+    Merges a subresults into the running aggregate results.
+
+    Args:
+        complete_results (dict): Aggregate results so far, with keys:
+            - 'actual_annotations' (List[str]): combined list of all actual annotations
+            - 'predicted_annotations' (List[str]): combined list of all predicted annotations
+            - 'max_classification_time_ms' (float): the highest classification time (ms) observed
+            - 'max_classification_memory_kb' (float): the highest memory usage (kB) observed
+        subresults (dict): Subresults:
+            - 'actual_annotations' (List[str]): list of actual annotations within the subpart
+            - 'predicted_annotations' (List[str]): list of predicted annotations within the subpart
+            - 'max_classification_time_ms' (float): the highest classification time (ms) observed within the subpart
+            - 'max_classification_memory_kb' (float): the highest memory usage (kB) observed within the subpart
+
+    Returns:
+        dict: Updated aggregate results containing:
+            - 'actual_annotations': combined list of all actual annotations
+            - 'predicted_annotations': combined list of all predicted annotations
+            - 'max_classification_time_ms': the highest classification time (ms) observed
+            - 'max_classification_memory_kb': the highest memory usage (kB) observed
+    """
+    subpart_actual_annotations = subresults['actual_annotations']
+    subpart_predicted_annotations = subresults['predicted_annotations']
+    complete_results['actual_annotations'].extend(subpart_actual_annotations)
+    complete_results['predicted_annotations'].extend(subpart_predicted_annotations)
+
+    subpart_max_classification_time_ms = subresults['max_classification_time_ms']
+    subpart_max_classification_memory_kb = subresults['max_classification_memory_kb']
+    max_classification_time_ms = max(subpart_max_classification_time_ms, complete_results['max_classification_time_ms'])
+    max_classification_memory_kb = max(subpart_max_classification_memory_kb, complete_results['max_classification_memory_kb'])
+
+    return {
+        'actual_annotations': complete_results['actual_annotations'], 
+        'predicted_annotations': complete_results['predicted_annotations'], 
+        'max_classification_time_ms': max_classification_time_ms, 
+        'max_classification_memory_kb': max_classification_memory_kb
+    }
+
 def classify_window_by_window(df: pd.DataFrame, window_size: int, overlap_size: int, 
     loaded_model: ImpulseRunner) -> Optional[dict]:
     """
@@ -136,41 +176,38 @@ def classify_window_by_window(df: pd.DataFrame, window_size: int, overlap_size: 
     if not input_valid:
         return None
     
-    predicted_annotations = list()
-    actual_annotations = list()
-
-    max_classification_time_ms = 0.0
-    max_classification_memory_kb = 0.0
+    complete_results = {
+        'actual_annotations': list(),
+        'predicted_annotations': list(),
+        'max_classification_time_ms': 0.0,
+        'max_classification_memory_kb': 0.0,
+    }
 
     start_position = 0
     while start_position + window_size <= total_rows:
         end_position = start_position + window_size
-
         window = df.iloc[start_position : end_position]
 
         last_annotation = window['annotation'].iloc[-1]
-        actual_annotations.append(last_annotation)
 
         trace_start = start_tracing_time_and_memory()
-
         formatted_window = format_window_for_classification(window)
         classification_result = classify_window(loaded_model, formatted_window)
-        
         window_classification_time_ms, window_classification_memory_kb = stop_trace(trace_start)
-        max_classification_time_ms = max(window_classification_time_ms, max_classification_time_ms)
-        max_classification_memory_kb = max(window_classification_memory_kb, max_classification_memory_kb)
 
         prediction_class, _ = get_top_prediction(classification_result)
-        predicted_annotations.append(prediction_class)
+
+        window_results = {
+            'actual_annotations': [last_annotation],
+            'predicted_annotations': [prediction_class],
+            'max_classification_time_ms': window_classification_time_ms,
+            'max_classification_memory_kb': window_classification_memory_kb,
+        }
+        complete_results = update_results(complete_results, window_results)
 
         start_position += (window_size - overlap_size)
 
-    return {
-        'actual_annotations': actual_annotations,
-        'predicted_annotations': predicted_annotations,
-        'max_classification_time_ms': max_classification_time_ms,
-        'max_classification_memory_kb': max_classification_memory_kb
-    }
+    return complete_results
 
 def save_report_to_json_file(output_dir_path: Path, report: dict, output_file_name: str = 'classification_report.json'):
     """
@@ -227,46 +264,6 @@ def generate_report(results: dict) -> dict:
         'weighted_avg_f1': weighted_avg_f1,
         'max_classification_time_ms': max_classification_time_ms,
         'peak_classification_memory_kb': max_classification_memory_kb
-    }
-
-def update_results(complete_results: dict, episode_classification_results: dict) -> dict:
-    """
-    Merges a single episode's classification results into the running aggregate results.
-
-    Args:
-        complete_results (dict): Aggregate results so far, with keys:
-            - 'actual_annotations' (List[str]): combined list of all actual annotations
-            - 'predicted_annotations' (List[str]): combined list of all predicted annotations
-            - 'max_classification_time_ms' (float): the highest classification time (ms) observed
-            - 'max_classification_memory_kb' (float): the highest memory usage (kB) observed
-        episode_classification_results (dict): One episode's results:
-            - 'actual_annotations' (List[str]): list of actual annotations within the episode
-            - 'predicted_annotations' (List[str]): list of predicted annotations within the episode
-            - 'max_classification_time_ms' (float): the highest classification time (ms) observed within the episode
-            - 'max_classification_memory_kb' (float): the highest memory usage (kB) observed within the episode
-
-    Returns:
-        dict: Updated aggregate results containing:
-            - 'actual_annotations': combined list of all actual annotations
-            - 'predicted_annotations': combined list of all predicted annotations
-            - 'max_classification_time_ms': the highest classification time (ms) observed
-            - 'max_classification_memory_kb': the highest memory usage (kB) observed
-    """
-    episode_actual_annotations = episode_classification_results['actual_annotations']
-    episode_predicted_annotations = episode_classification_results['predicted_annotations']
-    complete_results['actual_annotations'].extend(episode_actual_annotations)
-    complete_results['predicted_annotations'].extend(episode_predicted_annotations)
-
-    episode_max_classification_time_ms = episode_classification_results['max_classification_time_ms']
-    episode_max_classification_memory_kb = episode_classification_results['max_classification_memory_kb']
-    max_classification_time_ms = max(episode_max_classification_time_ms, complete_results['max_classification_time_ms'])
-    max_classification_memory_kb = max(episode_max_classification_memory_kb, complete_results['max_classification_memory_kb'])
-
-    return {
-        'actual_annotations': complete_results['actual_annotations'], 
-        'predicted_annotations': complete_results['predicted_annotations'], 
-        'max_classification_time_ms': max_classification_time_ms, 
-        'max_classification_memory_kb': max_classification_memory_kb
     }
 
 def process_files(window_size: int, window_overlap: int, model_file_path: Path, input_dir_path: Path, output_dir_path) -> None:
