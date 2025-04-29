@@ -1,9 +1,7 @@
 import pandas as pd
 from pathlib import Path
-from darts import TimeSeries
-from typing import List, Optional
+from typing import List
 
-from convert_timestamps import convert_timestamps_from_miliseconds_to_localized_datetime
 
 def read_csv_to_pandas_dataframe(path_file: Path) -> pd.DataFrame:
     """
@@ -63,32 +61,6 @@ def infer_frequency(df: pd.DataFrame, time_col: str) -> str:
     if inferred_freq is None:
         raise ValueError("Could not infer frequency. Ensure timestamps are evenly spaced.")
     return inferred_freq
-
-def read_csv_to_darts_timeseries(file_path: Path, value_cols: Optional[List[str]] = None) -> TimeSeries:
-    """
-    Reads a CSV file into a Darts TimeSeries object.
-
-    Args:
-        file_path (Path): Path to the CSV file.
-        value_cols (Optional[List[str]]): List of column names to be used as value columns.
-                                          If None, all columns except 'time' will be used.
-
-    Returns:
-        TimeSeries: The resulting TimeSeries object.
-    """
-    df = read_csv_to_pandas_dataframe(file_path)
-    df = convert_timestamps_from_miliseconds_to_localized_datetime(df, 'time')
-    df['time'] = df['time'].dt.tz_localize(None)
-    
-    frequency = infer_frequency(df, 'time')
-
-    if value_cols is None:
-        all_columns = get_csv_columns(file_path)
-        value_cols = [col for col in all_columns if col != 'time']
-
-
-    series = TimeSeries.from_dataframe(df, time_col='time', value_cols=value_cols, fill_missing_dates=True, freq=frequency)
-    return series
 
 def get_all_csv_files_in_directory(dir_path: Path):
     files = sorted(dir_path.glob('*.csv'))
