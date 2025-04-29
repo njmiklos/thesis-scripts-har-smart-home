@@ -17,11 +17,11 @@ import json
 from typing import List, Tuple, Optional
 from pathlib import Path
 
-from edge_impulse_runner import ImpulseRunner
+from inference.edge_impulse_runner import ImpulseRunner
 from utils.get_env import get_input_path, get_output_path
 from utils.handle_csv import read_csv_to_pandas_dataframe, get_all_csv_files_in_directory
-from classify_eim import load_model, close_loaded_model, classify_window, get_top_prediction
-from visualize_ei_reports import convert_matrix_values_to_percentages
+from inference.classify_eim import load_model, close_loaded_model, classify_window, get_top_prediction
+from inference.visualize_ei_reports import convert_matrix_values_to_percentages
 from data_analysis.visualize_data import generate_confusion_matrix
 
 

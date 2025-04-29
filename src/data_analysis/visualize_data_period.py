@@ -1,6 +1,6 @@
 from utils.get_env import get_base_path
 from utils.handle_csv import read_csv_to_pandas_dataframe, get_all_csv_files_in_directory
-from visualize_data import generate_timeseries_plot
+from data_analysis.visualize_data import generate_timeseries_plot
 from data_processing.filter_df import filter_by_date, filter_by_time_range
 
 

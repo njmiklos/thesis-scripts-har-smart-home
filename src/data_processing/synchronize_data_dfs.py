@@ -3,7 +3,7 @@ from pathlib import Path
 
 from utils.get_env import get_base_path
 from utils.handle_csv import get_all_csv_files_in_directory, read_csv_to_pandas_dataframe, save_pandas_dataframe_to_csv
-from convert_timestamps import convert_timestamps_from_miliseconds_to_localized_datetime, convert_timestamps_from_localized_datetime_to_miliseconds
+from data_processing.convert_timestamps import convert_timestamps_from_miliseconds_to_localized_datetime, convert_timestamps_from_localized_datetime_to_miliseconds
 
 def get_global_start_time(files: list) -> pd.Timestamp:
     """

@@ -2,7 +2,7 @@ from utils.handle_csv import save_pandas_dataframe_to_csv
 from utils.get_env import get_base_path
 
 from data_processing.merge_data_dfs import merge_synchronized_files_into_single_df
-from visualize_data import generate_heatmap
+from data_analysis.visualize_data import generate_heatmap
 
 
 if __name__ == '__main__':

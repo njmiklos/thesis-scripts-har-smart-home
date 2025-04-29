@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional, Tuple
 
 from utils.get_env import get_input_path, get_output_path
-from edge_impulse_runner import ImpulseRunner
+from inference.edge_impulse_runner import ImpulseRunner
 
 
 def load_model(model_file_path: Path) -> ImpulseRunner:
