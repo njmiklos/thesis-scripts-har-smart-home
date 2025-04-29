@@ -10,7 +10,7 @@ This repository covers working with timeseries sensor data in preparation for a 
 - 📊 Data Analysis & Visualization: Generating statistical summaries based on annotated episodes, creating scatter plots, timeseries graphs, and histograms from sensor readings.
 - 🏷️ Data Annotation: Annotating sensor data using predefined episodes.
 - 📁 File Management: Splitting timeseries data into daily or episodic segments.
-# 📝 Project Structure
+## 📝 Project Structure
 ```
 📂 thesis-scripts-har-smart-home/
 ├── 📁 src/               # Python scripts
@@ -64,14 +64,14 @@ CHAT_AC_ENDPOINT='https://chat-ai.academiccloud.de/yourEndpoint'
 ## 2. Run Scripts
 Once you have an .env file:
 1. Set your working directory to `thesis-scripts-har-smart-home/src`
-Open your terminal in `thesis-scripts-har-smart-home/src` or run `cd /path/to/thesis-scripts-har-smart-home/src`.
+- Open your terminal in `thesis-scripts-har-smart-home/src` or run `cd /path/to/thesis-scripts-har-smart-home/src`.
 2. Invoke the script as a module
 Run: `python3 -m {subdirectory}.{module}`. 
 - Omit the `.py` extension.
 - For top-level scripts (placed directly in `src/`), there is no subdirectory, so simply run: `python3 -m {module}`.
-
-Example 1: If I wanted to run `src/get_env.py`, I would run: `python3 -m get_env`. 
-Example 2: If I wanted to run `src/ei_tools/classify_eim.py`, I would run: `python3 -m ei_tools.classify_eim`.
+### Examples
+- Example 1: If I wanted to run `src/get_env.py`, I would run: `python3 -m get_env`. 
+- Example 2: If I wanted to run `src/ei_tools/classify_eim.py`, I would run: `python3 -m ei_tools.classify_eim`.
 # 🚀 Example Pipeline (WIP, TODO)
 1. Data Collection:
     - Create an Annotation File: List all annotated episodes and parse them using `parse_annotation_file.py` to ensure compatibility with other scripts.
@@ -88,7 +88,7 @@ Example 2: If I wanted to run `src/ei_tools/classify_eim.py`, I would run: `pyth
     - Segment Data: Split timeseries into episodes, e.g., daily or activity-based segments.
     - Balance Classes: Adjust for imbalanced activity distributions (e.g., too many ‘sleeping' episodes, not enough ‘cooking').
 # 💡 Notes & Philosophy
-- This code is structured based on my thesis needs (e.g., sensor types, locations, sampling rates), so it may not be plug-and-play for others. Full project details will be in my thesis.
+This code is structured based on my thesis needs (e.g., sensor types, locations, sampling rates), so it may not be plug-and-play for others. Full project details will be in my thesis.
 # 🛡️ License
 The repository is licensed under the MIT License. In short, this means:
 - I retain ownership of the code, but you can use it freely under the MIT terms, and mine.  
