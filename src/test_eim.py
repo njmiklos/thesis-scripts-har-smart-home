@@ -80,6 +80,36 @@ def validate_input(total_rows: int, window_size: int, overlap_size: int) -> bool
 
     return True
 
+def start_tracing_time_and_memory() -> float:
+    """
+    Starts timing and memory tracing.
+
+    Returns:
+        The start timestamp (time.perf_counter()).
+    """
+    tracemalloc.start()
+    return time.perf_counter()
+
+def stop_trace(start_time: float) -> Tuple[float, float]:
+    """
+    Stops timing and memory tracing, and reports the elapsed time and peak memory.
+
+    Args:
+        start_time: The timestamp returned by start_trace().
+
+    Returns:
+        Tuple[float, float]:
+          - elapsed_ms: milliseconds elapsed since start_time
+          - peak_kb: peak memory (in KB) during the trace
+    """
+    end_time = time.perf_counter()
+    _, peak_bytes = tracemalloc.get_traced_memory()
+    tracemalloc.stop()
+
+    elapsed_ms = (end_time - start_time) * 1000
+    peak_kb = peak_bytes / 1024
+    return elapsed_ms, peak_kb
+
 def classify_window_by_window(df: pd.DataFrame, window_size: int, overlap_size: int, 
     loaded_model: ImpulseRunner) -> Tuple[Optional[List[str]], Optional[List[str]], Optional[List[float]], Optional[List[float]]]:
     """
@@ -93,59 +123,51 @@ def classify_window_by_window(df: pd.DataFrame, window_size: int, overlap_size: 
 
     Returns:
         Tuple[Optional[List[str]], Optional[List[str]], Optional[List[float]], Optional[List[float]]]: 
-            If input is valid, a Tuple with actual and predicted annotations for all windows,
-            longest time and peak memory a single classification took in the episode. 
+            If input is valid: 
+            - a list of actual annotations for all windows,
+            - a list of predicted annotations for all windows,
+            - the longest time a single classification took in the episode,
+            - the peak memory a single classification took in the episode. 
             Empty otherwise.
     """
     total_rows = len(df)
 
     input_valid = validate_input(total_rows, window_size, overlap_size)
+    if not input_valid:
+        return None, None, None, None
+    
+    predicted_annotations = list()
+    actual_annotations = list()
 
-    if input_valid:
-        predicted_annotations = list()
-        actual_annotations = list()
+    time_longest_across_episode = 0.0
+    memory_peak_across_episode = 0.0
 
-        time_longest_across_episode = 0
-        memory_peak_across_episode = 0
+    start_position = 0
+    segment_count = 1
+    while start_position + window_size <= total_rows:
+        end_position = start_position + window_size
 
-        start_position = 0
-        segment_count = 1
-        while start_position + window_size <= total_rows:
-            end_position = start_position + window_size
+        window = df.iloc[start_position : end_position]
 
-            window = df.iloc[start_position : end_position]
+        last_annotation = window['annotation'].iloc[-1]
+        actual_annotations.append(last_annotation)
 
-            last_annotation = window['annotation'].iloc[-1]
-            actual_annotations.append(last_annotation)
+        trace_start = start_tracing_time_and_memory()
 
-            start_time = time.perf_counter()
+        formatted_window = format_window_for_classification(window)
+        classification_result = classify_window(loaded_model, formatted_window)
+        
+        time_longest_within_window_ms, memory_peak_within_window_kb = stop_trace(trace_start)
+        time_longest_across_episode = max(time_longest_within_window_ms, time_longest_across_episode)
+        memory_peak_across_episode = max(memory_peak_within_window_kb, memory_peak_across_episode)
 
-            tracemalloc.start()
+        prediction_class, _ = get_top_prediction(classification_result)
+        predicted_annotations.append(prediction_class)
 
-            formatted_window = format_window_for_classification(window)
-            classification_result = classify_window(loaded_model, formatted_window)
-            prediction_class, _ = get_top_prediction(classification_result)
-            predicted_annotations.append(prediction_class)
-            
-            end_time = time.perf_counter()
-            time_longest_within_window_s = end_time - start_time
-            time_longest_within_window_ms = time_longest_within_window_s * 1000
+        start_position += (window_size - overlap_size)
+        segment_count += 1
 
-            _, memory_peak_within_window_b = tracemalloc.get_traced_memory()
-            tracemalloc.stop()
-            memory_peak_within_window_kb = memory_peak_within_window_b / 1024
-
-            if time_longest_within_window_ms > time_longest_across_episode:
-                time_longest_across_episode = time_longest_within_window_ms
-            if memory_peak_within_window_kb > memory_peak_across_episode:
-                memory_peak_across_episode = memory_peak_within_window_kb
-
-            start_position += (window_size - overlap_size)
-            segment_count += 1
-
-        return actual_annotations, predicted_annotations, time_longest_across_episode, memory_peak_across_episode
-
-    return None, None, None, None
+    return actual_annotations, predicted_annotations, time_longest_across_episode, memory_peak_across_episode
 
 def save_report_to_json_file(output_dir_path: Path, report: dict, output_file_name: str = 'classification_report.json'):
     """
@@ -214,24 +236,28 @@ def process_files(window_size: int, window_overlap: int, model_file_path: Path, 
     predicted_annotations = list()
     actual_annotations = list()
     
-    time_longest_across_episodes = 0
-    memory_peak_across_episodes = 0
+    time_longest_across_episodes = 0.0
+    memory_peak_across_episodes = 0.0
 
     loaded_model = load_model(model_file_path)
 
     for file in files:
+        window_classified = False
+
         print(f'Processing file {file}...')
+
         episode_df = read_csv_to_pandas_dataframe(file)
         ep_actual_annotations, ep_predicted_annotations, ep_time_longest, ep_memory_peak = classify_window_by_window(episode_df, window_size, window_overlap, loaded_model)
         
-        if ep_actual_annotations and ep_predicted_annotations:
+        if ep_actual_annotations and ep_predicted_annotations and ep_time_longest and ep_memory_peak:
+            window_classified = True
+
+        if window_classified:   # i.e. not skipped
             actual_annotations.extend(ep_actual_annotations)
             predicted_annotations.extend(ep_predicted_annotations)
 
-            if ep_time_longest > time_longest_across_episodes:
-                time_longest_across_episodes = ep_time_longest
-            if ep_memory_peak > memory_peak_across_episodes:
-                memory_peak_across_episodes = ep_memory_peak
+            time_longest_across_episodes = max(ep_time_longest, time_longest_across_episodes)
+            memory_peak_across_episodes = max(ep_memory_peak, memory_peak_across_episodes)
 
     close_loaded_model(loaded_model)
 
