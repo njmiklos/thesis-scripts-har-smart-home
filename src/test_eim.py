@@ -258,9 +258,11 @@ def generate_report(results: 'ClassificationResults') -> dict:
     c_matrix = confusion_matrix(actual_annotations, predicted_annotations, labels=classes)
     accuracy = accuracy_score(actual_annotations, predicted_annotations)
     #area_under_roc_curve = roc_curve(actual_annotations, predicted_annotations)
-    #weighted_avg_precision = average_precision_score(actual_annotations, predicted_annotations, average='weighted')
-    weighted_avg_recall = recall_score(actual_annotations, predicted_annotations, average='weighted', labels=classes)
-    weighted_avg_f1 = f1_score(actual_annotations, predicted_annotations, average='weighted', labels=classes)
+    #weighted_avg_precision = average_precision_score(actual_annotations, predicted_annotations, average='weighted', labels=classes,zero_division=0)
+    weighted_avg_recall = recall_score(actual_annotations, predicted_annotations, 
+                                       average='weighted', labels=classes,zero_division=0)
+    weighted_avg_f1 = f1_score(actual_annotations, predicted_annotations, 
+                                       average='weighted', labels=classes,zero_division=0)
 
     return {
         'confusion_matrix': c_matrix.tolist(),
