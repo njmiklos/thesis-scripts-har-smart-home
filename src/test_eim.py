@@ -8,7 +8,7 @@ The data is expected to contain only those columns that were used in training,
 except for the timestamp column and the annotation column.
 """
 import pandas as pd
-from sklearn.metrics import confusion_matrix, accuracy_score, average_precision_score, f1_score, roc_curve, recall_score
+from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, f1_score, recall_score
 import time
 import tracemalloc
 import json
@@ -242,8 +242,10 @@ def generate_report(results: 'ClassificationResults') -> dict:
 
     Returns:
         dict: A report containing:
+            - 'classes' (List[str]): A sorted list of unique true and false annotations.
             - 'confusion_matrix' (List[List[int]]): Confusion matrix between true and predicted labels.
             - 'accuracy' (float): Overall classification accuracy.
+            - 'weighted_avg_precision' (float): Weighted average precision.
             - 'weighted_avg_recall' (float): Weighted average recall.
             - 'weighted_avg_f1_score' (float): Weighted average F1 score.
             - 'classification_time_ms' (float): The worst-case classification time (ms).
@@ -257,16 +259,18 @@ def generate_report(results: 'ClassificationResults') -> dict:
 
     c_matrix = confusion_matrix(actual_annotations, predicted_annotations, labels=classes)
     accuracy = accuracy_score(actual_annotations, predicted_annotations)
-    #area_under_roc_curve = roc_curve(actual_annotations, predicted_annotations)
-    #weighted_avg_precision = average_precision_score(actual_annotations, predicted_annotations, average='weighted', labels=classes,zero_division=0)
+    weighted_avg_precision = precision_score(actual_annotations, predicted_annotations, 
+                                        average='weighted', labels=classes, zero_division=0)
     weighted_avg_recall = recall_score(actual_annotations, predicted_annotations, 
-                                       average='weighted', labels=classes,zero_division=0)
+                                       average='weighted', labels=classes, zero_division=0)
     weighted_avg_f1 = f1_score(actual_annotations, predicted_annotations, 
-                                       average='weighted', labels=classes,zero_division=0)
+                                       average='weighted', labels=classes, zero_division=0)
 
     return {
+        'classes': classes,
         'confusion_matrix': c_matrix.tolist(),
         'accuracy': accuracy,
+        'weighted_avg_precision': weighted_avg_precision,
         'weighted_avg_recall': weighted_avg_recall,
         'weighted_avg_f1': weighted_avg_f1,
         'max_classification_time_ms': max_classification_time_ms,
