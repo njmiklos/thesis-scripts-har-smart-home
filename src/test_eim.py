@@ -113,23 +113,22 @@ def stop_trace(start_time: float) -> Tuple[float, float]:
 def classify_window_by_window(df: pd.DataFrame, window_size: int, overlap_size: int, 
     loaded_model: ImpulseRunner) -> Optional[dict]:
     """
-    Segments the input DataFrame into overlapping windows, runs classification on each,
-    and tracks the worst-case time and memory usage.
+    Segments the input DataFrame into overlapping windows, runs classification on each window,
+    and records the ground truth, model predictions, and the worst-case classification time
+    and memory usage.
 
     Args:
-        df (pd.DataFrame): Input DataFrame containing the data to be segmented.
-        window_size (int): Number of rows in each segmented window.
-        overlap_size (int): Number of overlapping rows between consecutive windows.
-        loaded_model (ImpulseRunner): Pre-loaded Edge Impulse model runner.
+        df (pd.DataFrame): Input DataFrame containing at least an 'annotation' column.
+        window_size (int): Number of rows in each window.
+        overlap_size (int): Number of rows that overlap between consecutive windows.
+        loaded_model (ImpulseRunner): Pre-loaded Edge Impulse model runner used for inference.
 
     Returns:
-        Optional[dict]: If input validation fails, returns None. Otherwise, 
-        returns a dict with:
-            - List[str] with actual annotations for all windows,
-            - List[str] with predicted annotations for all windows,
-            - float with the longest time a single classification took in the episode,
-            - float with the peak memory a single classification took in the episode. 
-            Empty otherwise.
+        Optional[dict]: Returns None if input validation fails. Otherwise, returns a dict with:
+            - actual_annotations (List[str]): Ground truth annotation from the last row of each window.
+            - predicted_annotations (List[str]): Model's predicted class for each window.
+            - max_classification_time_ms (float): Maximum time in milliseconds taken by any single window classification.
+            - max_classification_memory_kb (float): Maximum memory in kilobytes used by any single window classification.
     """
     total_rows = len(df)
 
@@ -188,60 +187,111 @@ def save_report_to_json_file(output_dir_path: Path, report: dict, output_file_na
     with open(output_path, 'w') as f:
         json.dump(report, f, indent=4)
 
-def generate_report(actual_annotations: List[str], predicted_annotations: List[str], 
-                    total_time_ms: float, peak_memory_kb: float) -> dict:
+def generate_report(results: dict) -> dict:
     """
-    Generates and saves a report based on classification results.
+    Generates a performance report from the aggregated classification results.
 
     Args:
-        actual_annotations (List[str]): List of actual annotation labels.
-        predicted_annotations (List[str]): List of predicted annotation labels.
-        total_time_ms (float): Time in ms needed for the classification process.
-        peak_memory_kb (float): Peak memory in KB during the classification process.
+        results (dict): Dictionary containing the aggregated outputs from the dataset, with keys:
+            - 'actual_annotations' (List[str]): All ground-truth labels collected.
+            - 'predicted_annotations' (List[str]): All model predictions collected.
+            - 'max_classification_time_ms' (float): Maximum time (ms) taken by any window classification.
+            - 'max_classification_memory_kb' (float): Peak memory usage (kB) of any window classification.
 
     Returns:
-        dict: The report containing all metrics and confusion matrix.
+        dict: A report containing:
+            - 'confusion_matrix' (List[List[int]]): Confusion matrix between true and predicted labels.
+            - 'accuracy' (float): Overall classification accuracy.
+            - 'weighted_avg_recall' (float): Weighted average recall.
+            - 'weighted_avg_f1_score' (float): Weighted average F1 score.
+            - 'classification_time_ms' (float): The worst-case classification time (ms).
+            - 'peak_memory_kb' (float): The worst-case memory usage (kB).
     """
+    actual_annotations = results['actual_annotations']
+    predicted_annotations = results['predicted_annotations']
+    max_classification_time_ms = results['max_classification_time_ms']
+    max_classification_memory_kb = results['max_classification_memory_kb']
+
     classes = list(set(actual_annotations))
     c_matrix = confusion_matrix(actual_annotations, predicted_annotations, labels=classes)
     accuracy = accuracy_score(actual_annotations, predicted_annotations)
     #area_under_roc_curve = roc_curve(actual_annotations, predicted_annotations)
     #weighted_avg_precision = average_precision_score(actual_annotations, predicted_annotations, average='weighted')
     weighted_avg_recall = recall_score(actual_annotations, predicted_annotations, average='weighted')
-    weighted_avg_f1_score = f1_score(actual_annotations, predicted_annotations, average='weighted')
+    weighted_avg_f1 = f1_score(actual_annotations, predicted_annotations, average='weighted')
 
-    report = {
+    return {
         'confusion_matrix': c_matrix.tolist(),
         'accuracy': accuracy,
         'weighted_avg_recall': weighted_avg_recall,
-        'weighted_avg_f1_score': weighted_avg_f1_score,
-        'classification_time_ms': total_time_ms,
-        'peak_memory_kb': peak_memory_kb
+        'weighted_avg_f1': weighted_avg_f1,
+        'max_classification_time_ms': max_classification_time_ms,
+        'peak_classification_memory_kb': max_classification_memory_kb
     }
 
-    return report
+def update_results(complete_results: dict, episode_classification_results: dict) -> dict:
+    """
+    Merges a single episode's classification results into the running aggregate results.
+
+    Args:
+        complete_results (dict): Aggregate results so far, with keys:
+            - 'actual_annotations' (List[str]): combined list of all actual annotations
+            - 'predicted_annotations' (List[str]): combined list of all predicted annotations
+            - 'max_classification_time_ms' (float): the highest classification time (ms) observed
+            - 'max_classification_memory_kb' (float): the highest memory usage (kB) observed
+        episode_classification_results (dict): One episode's results:
+            - 'actual_annotations' (List[str]): list of actual annotations within the episode
+            - 'predicted_annotations' (List[str]): list of predicted annotations within the episode
+            - 'max_classification_time_ms' (float): the highest classification time (ms) observed within the episode
+            - 'max_classification_memory_kb' (float): the highest memory usage (kB) observed within the episode
+
+    Returns:
+        dict: Updated aggregate results containing:
+            - 'actual_annotations': combined list of all actual annotations
+            - 'predicted_annotations': combined list of all predicted annotations
+            - 'max_classification_time_ms': the highest classification time (ms) observed
+            - 'max_classification_memory_kb': the highest memory usage (kB) observed
+    """
+    episode_actual_annotations = episode_classification_results['actual_annotations']
+    episode_predicted_annotations = episode_classification_results['predicted_annotations']
+    complete_results['actual_annotations'].extend(episode_actual_annotations)
+    complete_results['predicted_annotations'].extend(episode_predicted_annotations)
+
+    episode_max_classification_time_ms = episode_classification_results['max_classification_time_ms']
+    episode_max_classification_memory_kb = episode_classification_results['max_classification_memory_kb']
+    max_classification_time_ms = max(episode_max_classification_time_ms, complete_results['max_classification_time_ms'])
+    max_classification_memory_kb = max(episode_max_classification_memory_kb, complete_results['max_classification_time_ms'])
+
+    return {
+        'actual_annotations': complete_results['actual_annotations'], 
+        'predicted_annotations': complete_results['predicted_annotations'], 
+        'max_classification_time_ms': max_classification_time_ms, 
+        'max_classification_memory_kb': max_classification_memory_kb
+    }
 
 def process_files(window_size: int, window_overlap: int, model_file_path: Path, input_dir_path: Path, output_dir_path) -> None:
     """
-    Processes all CSV files in the input directory by segmenting them into windows,
-    classifying the windows, and generating a classficiation result in the output directory.
+    Loads the specified Edge Impulse model, processes every CSV file in the input directory,
+    and writes a combined report.
 
     Args:
-        window_size (int): The number of rows in each segmented window.
-        window_overlap (int): The number of overlapping rows between consecutive windows.
-        model_file_path (Path): Path to the .eim model file.
-        input_dir (Path): Directory containing input CSV files.
-        output_dir (Path): Directory to write output files.
+        window_size (int): Number of rows per sliding window.
+        window_overlap (int): Number of rows to overlap between consecutive windows.
+        model_file_path (Path): Filesystem path to the pre-trained Edge Impulse model.
+        input_dir_path (Path): Directory containing the input CSV files to process.
+        output_dir_path (Path): Directory where the final JSON report will be saved.
     
     Returns:
         None
     """
     files = get_all_csv_files_in_directory(input_dir_path)
-    predicted_annotations = list()
-    actual_annotations = list()
-    
-    max_classification_time_ms = 0.0
-    max_classification_memory_kb = 0.0
+
+    complete_results = {
+        'actual_annotations': list(), 
+        'predicted_annotations': list(), 
+        'max_classification_time_ms': 0.0, 
+        'max_classification_memory_kb': 0.0
+    }
 
     loaded_model = load_model(model_file_path)
 
@@ -251,18 +301,11 @@ def process_files(window_size: int, window_overlap: int, model_file_path: Path, 
         episode_classification_results = classify_window_by_window(episode_df, window_size, window_overlap, loaded_model)
         
         if episode_classification_results: # i.e. not skipped
-            actual_annotations.extend(episode_classification_results['actual_annotations'])
-            predicted_annotations.extend(episode_classification_results['predicted_annotations'])
-
-            episode_max_classification_time_ms = episode_classification_results['max_classification_time_ms']
-            episode_max_classification_memory_kb = episode_classification_results['max_classification_memory_kb']
-
-            max_classification_time_ms = max(episode_max_classification_time_ms, max_classification_time_ms)
-            max_classification_memory_kb = max(episode_max_classification_memory_kb, max_classification_memory_kb)
+            complete_results = update_results(complete_results, episode_classification_results)
 
     close_loaded_model(loaded_model)
 
-    report = generate_report(actual_annotations, predicted_annotations, max_classification_time_ms, max_classification_memory_kb)
+    report = generate_report(complete_results)
     save_report_to_json_file(output_dir_path, report)
 
 
