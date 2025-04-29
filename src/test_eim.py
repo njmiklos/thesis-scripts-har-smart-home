@@ -22,6 +22,43 @@ from handle_csv import read_csv_to_pandas_dataframe, get_all_csv_files_in_direct
 from classify_eim import load_model, close_loaded_model, classify_window, get_top_prediction
 
 
+class ClassificationResults:
+    """
+    An object holding aggregate classification results containing:
+        - 'actual_annotations' (Optional[List[str]]): combined list of all actual annotations
+        - 'predicted_annotations' (Optional[List[str]]): combined list of all predicted annotations
+        - 'max_classification_time_ms' (float): the highest classification time (ms) observed
+        - 'max_classification_memory_kb' (float): the highest memory usage (kB) observed
+    """
+    def __init__(self, actual_annotations: Optional[List[str]] = None, predicted_annotations: Optional[List[str]] = None,
+        max_classification_time_ms: float = 0.0, max_classification_memory_kb: float = 0.0) -> None:
+        self.actual_annotations = actual_annotations if actual_annotations is not None else []
+        self.predicted_annotations = predicted_annotations if predicted_annotations is not None else []
+        self.max_classification_time_ms = max_classification_time_ms
+        self.max_classification_memory_kb = max_classification_memory_kb
+
+    def update(self, other: 'ClassificationResults') -> None:
+        """
+        Merges another ClassificationResults into this one, in place.
+        """
+        self.actual_annotations.extend(other.actual_annotations)
+        self.predicted_annotations.extend(other.predicted_annotations)
+        if other.max_classification_time_ms > self.max_classification_time_ms:
+            self.max_classification_time_ms = other.max_classification_time_ms
+        if other.max_classification_memory_kb > self.max_classification_memory_kb:
+            self.max_classification_memory_kb = other.max_classification_memory_kb
+
+    def to_dict(self) -> dict:
+        """
+        Converts to a JSON-serializable dict for saving or reporting.
+        """
+        return {
+            'actual_annotations': self.actual_annotations,
+            'predicted_annotations': self.predicted_annotations,
+            'max_classification_time_ms': self.max_classification_time_ms,
+            'peak_classification_memory_kb': self.max_classification_memory_kb,
+        }
+
 def format_window_for_classification(df: pd.DataFrame) -> List[float]:
     """
     Flattens a DataFrame into a single Python list.
@@ -110,48 +147,8 @@ def stop_trace(start_time: float) -> Tuple[float, float]:
     peak_kb = peak_bytes / 1024
     return elapsed_ms, peak_kb
 
-def update_results(complete_results: dict, subresults: dict) -> dict:
-    """
-    Merges a subresults into the running aggregate results.
-
-    Args:
-        complete_results (dict): Aggregate results so far, with keys:
-            - 'actual_annotations' (List[str]): combined list of all actual annotations
-            - 'predicted_annotations' (List[str]): combined list of all predicted annotations
-            - 'max_classification_time_ms' (float): the highest classification time (ms) observed
-            - 'max_classification_memory_kb' (float): the highest memory usage (kB) observed
-        subresults (dict): Subresults:
-            - 'actual_annotations' (List[str]): list of actual annotations within the subpart
-            - 'predicted_annotations' (List[str]): list of predicted annotations within the subpart
-            - 'max_classification_time_ms' (float): the highest classification time (ms) observed within the subpart
-            - 'max_classification_memory_kb' (float): the highest memory usage (kB) observed within the subpart
-
-    Returns:
-        dict: Updated aggregate results containing:
-            - 'actual_annotations': combined list of all actual annotations
-            - 'predicted_annotations': combined list of all predicted annotations
-            - 'max_classification_time_ms': the highest classification time (ms) observed
-            - 'max_classification_memory_kb': the highest memory usage (kB) observed
-    """
-    subpart_actual_annotations = subresults['actual_annotations']
-    subpart_predicted_annotations = subresults['predicted_annotations']
-    complete_results['actual_annotations'].extend(subpart_actual_annotations)
-    complete_results['predicted_annotations'].extend(subpart_predicted_annotations)
-
-    subpart_max_classification_time_ms = subresults['max_classification_time_ms']
-    subpart_max_classification_memory_kb = subresults['max_classification_memory_kb']
-    max_classification_time_ms = max(subpart_max_classification_time_ms, complete_results['max_classification_time_ms'])
-    max_classification_memory_kb = max(subpart_max_classification_memory_kb, complete_results['max_classification_memory_kb'])
-
-    return {
-        'actual_annotations': complete_results['actual_annotations'], 
-        'predicted_annotations': complete_results['predicted_annotations'], 
-        'max_classification_time_ms': max_classification_time_ms, 
-        'max_classification_memory_kb': max_classification_memory_kb
-    }
-
 def classify_window_by_window(df: pd.DataFrame, window_size: int, overlap_size: int, 
-    loaded_model: ImpulseRunner) -> Optional[dict]:
+    loaded_model: ImpulseRunner) -> Optional['ClassificationResults']:
     """
     Segments the input DataFrame into overlapping windows, runs classification on each window,
     and records the ground truth, model predictions, and the worst-case classification time
@@ -176,12 +173,7 @@ def classify_window_by_window(df: pd.DataFrame, window_size: int, overlap_size: 
     if not input_valid:
         return None
     
-    complete_results = {
-        'actual_annotations': list(),
-        'predicted_annotations': list(),
-        'max_classification_time_ms': 0.0,
-        'max_classification_memory_kb': 0.0,
-    }
+    complete_results = ClassificationResults()
 
     start_position = 0
     while start_position + window_size <= total_rows:
@@ -197,13 +189,13 @@ def classify_window_by_window(df: pd.DataFrame, window_size: int, overlap_size: 
 
         prediction_class, _ = get_top_prediction(classification_result)
 
-        window_results = {
-            'actual_annotations': [last_annotation],
-            'predicted_annotations': [prediction_class],
-            'max_classification_time_ms': window_classification_time_ms,
-            'max_classification_memory_kb': window_classification_memory_kb,
-        }
-        complete_results = update_results(complete_results, window_results)
+        window_results = ClassificationResults(
+            actual_annotations=[last_annotation],
+            predicted_annotations=[prediction_class],
+            max_classification_time_ms=window_classification_time_ms,
+            max_classification_memory_kb=window_classification_memory_kb,
+        )
+        complete_results.update(window_results)
 
         start_position += (window_size - overlap_size)
 
@@ -224,16 +216,12 @@ def save_report_to_json_file(output_dir_path: Path, report: dict, output_file_na
     with open(output_path, 'w') as f:
         json.dump(report, f, indent=4)
 
-def generate_report(results: dict) -> dict:
+def generate_report(results: 'ClassificationResults') -> dict:
     """
     Generates a performance report from the aggregated classification results.
 
     Args:
-        results (dict): Dictionary containing the aggregated outputs from the dataset, with keys:
-            - 'actual_annotations' (List[str]): All ground-truth labels collected.
-            - 'predicted_annotations' (List[str]): All model predictions collected.
-            - 'max_classification_time_ms' (float): Maximum time (ms) taken by any window classification.
-            - 'max_classification_memory_kb' (float): Peak memory usage (kB) of any window classification.
+        results (ClassificationResults): Aggregated classification results.
 
     Returns:
         dict: A report containing:
@@ -244,10 +232,10 @@ def generate_report(results: dict) -> dict:
             - 'classification_time_ms' (float): The worst-case classification time (ms).
             - 'peak_memory_kb' (float): The worst-case memory usage (kB).
     """
-    actual_annotations = results['actual_annotations']
-    predicted_annotations = results['predicted_annotations']
-    max_classification_time_ms = results['max_classification_time_ms']
-    max_classification_memory_kb = results['max_classification_memory_kb']
+    actual_annotations = results.actual_annotations
+    predicted_annotations = results.predicted_annotations
+    max_classification_time_ms = results.max_classification_time_ms
+    max_classification_memory_kb = results.max_classification_memory_kb
 
     classes = list(set(actual_annotations))
     c_matrix = confusion_matrix(actual_annotations, predicted_annotations, labels=classes)
@@ -283,12 +271,7 @@ def process_files(window_size: int, window_overlap: int, model_file_path: Path, 
     """
     files = get_all_csv_files_in_directory(input_dir_path)
 
-    complete_results = {
-        'actual_annotations': list(), 
-        'predicted_annotations': list(), 
-        'max_classification_time_ms': 0.0, 
-        'max_classification_memory_kb': 0.0
-    }
+    complete_results = ClassificationResults()
 
     loaded_model = load_model(model_file_path)
 
@@ -298,7 +281,7 @@ def process_files(window_size: int, window_overlap: int, model_file_path: Path, 
         episode_classification_results = classify_window_by_window(episode_df, window_size, window_overlap, loaded_model)
         
         if episode_classification_results: # i.e. not skipped
-            complete_results = update_results(complete_results, episode_classification_results)
+            complete_results.update(episode_classification_results)
 
     close_loaded_model(loaded_model)
 
