@@ -35,6 +35,11 @@ class ClassificationResults:
     """
     def __init__(self, actual_annotations: Optional[List[str]] = None, predicted_annotations: Optional[List[str]] = None,
         max_classification_time_ms: float = 0.0, max_classification_memory_kb: float = 0.0) -> None:
+        if max_classification_time_ms < 0:
+            raise ValueError(f'Time must be larger than 0, got {max_classification_time_ms} ms')
+        if max_classification_time_ms < 0 or max_classification_memory_kb < 0:
+            raise ValueError(f'Memory must be larger than 0, got {max_classification_memory_kb} kb.')
+
         self.actual_annotations = actual_annotations if actual_annotations is not None else []
         self.predicted_annotations = predicted_annotations if predicted_annotations is not None else []
         self.max_classification_time_ms = max_classification_time_ms
@@ -51,15 +56,46 @@ class ClassificationResults:
         if other.max_classification_memory_kb > self.max_classification_memory_kb:
             self.max_classification_memory_kb = other.max_classification_memory_kb
 
-    def to_dict(self) -> dict:
+    def generate_summary(self) -> dict:
         """
-        Converts to a JSON-serializable dict for saving or reporting.
+        Generates a performance report from the aggregated classification results.
+
+        Returns:
+            dict: A report containing:
+                - 'classes' (List[str]): A sorted list of unique true and false annotations.
+                - 'confusion_matrix' (List[List[int]]): Confusion matrix between true and predicted labels.
+                - 'accuracy' (float): Overall classification accuracy.
+                - 'weighted_avg_precision' (float): Weighted average precision.
+                - 'weighted_avg_recall' (float): Weighted average recall.
+                - 'weighted_avg_f1_score' (float): Weighted average F1 score.
+                - 'classification_time_ms' (float): The worst-case classification time (ms).
+                - 'peak_memory_kb' (float): The worst-case memory usage (kB).
         """
+        if self.actual_annotations is None:
+            raise ValueError(f'Actual annotations list empty, cannot generate a report.')
+        if self.predicted_annotations is None:
+            raise ValueError(f'Predicted annotations list empty, cannot generate a report.')
+
+        classes = infer_classes(self.actual_annotations, self.predicted_annotations)
+
+        c_matrix = confusion_matrix(self.actual_annotations, self.predicted_annotations, labels=classes)
+        accuracy = accuracy_score(self.actual_annotations, self.predicted_annotations)
+        weighted_avg_precision = precision_score(self.actual_annotations, self.predicted_annotations, 
+                                            average='weighted', labels=classes, zero_division=0)
+        weighted_avg_recall = recall_score(self.actual_annotations, self.predicted_annotations, 
+                                        average='weighted', labels=classes, zero_division=0)
+        weighted_avg_f1 = f1_score(self.actual_annotations, self.predicted_annotations, 
+                                        average='weighted', labels=classes, zero_division=0)
+
         return {
-            'actual_annotations': self.actual_annotations,
-            'predicted_annotations': self.predicted_annotations,
+            'classes': classes,
+            'confusion_matrix': c_matrix.tolist(),
+            'accuracy': accuracy,
+            'weighted_avg_precision': weighted_avg_precision,
+            'weighted_avg_recall': weighted_avg_recall,
+            'weighted_avg_f1': weighted_avg_f1,
             'max_classification_time_ms': self.max_classification_time_ms,
-            'peak_classification_memory_kb': self.max_classification_memory_kb,
+            'peak_classification_memory_kb': self.max_classification_memory_kb
         }
 
 def format_window_for_classification(df: pd.DataFrame) -> List[float]:
@@ -204,20 +240,20 @@ def classify_window_by_window(df: pd.DataFrame, window_size: int, overlap_size: 
 
     return complete_results
 
-def save_report_to_json_file(output_dir_path: Path, report: dict, output_file_name: str = 'classification_report.json'):
+def save_to_json_file(output_dir_path: Path, dictionary: dict, output_file_name: str = 'classification_report.json'):
     """
-    Saves the given report dictionary to a JSON file.
+    Saves the given dictionary to a JSON file.
 
     Args:
         output_dir_path (Path): Path to the directory where report files are stored.
-        report (dict): The report containing all metrics and confusion matrix.
+        dictionary (dict): The dictionary to be saved.
         output_file_name (Optional[str]): Filename for the report, defaults to 'classification_report.json'.
     """
     output_path = output_dir_path / output_file_name
     output_dir_path.mkdir(parents=True, exist_ok=True)
 
     with open(output_path, 'w') as f:
-        json.dump(report, f, indent=4)
+        json.dump(dictionary, f, indent=4)
 
 def infer_classes(actual_annotations: List[str], predicted_annotations: List[str]) -> List[str]:
     """
@@ -248,50 +284,6 @@ def visualize_confusion_matrix(output_dir_path: Path, classes: List[str], confus
     conf_matrix_percentage = convert_matrix_values_to_percentages(confusion_matrix_array)
 
     generate_confusion_matrix(conf_matrix_percentage, classes, output_dir_path)
-
-def generate_report(results: 'ClassificationResults') -> dict:
-    """
-    Generates a performance report from the aggregated classification results.
-
-    Args:
-        results (ClassificationResults): Aggregated classification results.
-
-    Returns:
-        dict: A report containing:
-            - 'classes' (List[str]): A sorted list of unique true and false annotations.
-            - 'confusion_matrix' (List[List[int]]): Confusion matrix between true and predicted labels.
-            - 'accuracy' (float): Overall classification accuracy.
-            - 'weighted_avg_precision' (float): Weighted average precision.
-            - 'weighted_avg_recall' (float): Weighted average recall.
-            - 'weighted_avg_f1_score' (float): Weighted average F1 score.
-            - 'classification_time_ms' (float): The worst-case classification time (ms).
-            - 'peak_memory_kb' (float): The worst-case memory usage (kB).
-    """
-    actual_annotations = results.actual_annotations
-    predicted_annotations = results.predicted_annotations
-    max_classification_time_ms = results.max_classification_time_ms
-    max_classification_memory_kb = results.max_classification_memory_kb
-    classes = infer_classes(actual_annotations, predicted_annotations)
-
-    c_matrix = confusion_matrix(actual_annotations, predicted_annotations, labels=classes)
-    accuracy = accuracy_score(actual_annotations, predicted_annotations)
-    weighted_avg_precision = precision_score(actual_annotations, predicted_annotations, 
-                                        average='weighted', labels=classes, zero_division=0)
-    weighted_avg_recall = recall_score(actual_annotations, predicted_annotations, 
-                                       average='weighted', labels=classes, zero_division=0)
-    weighted_avg_f1 = f1_score(actual_annotations, predicted_annotations, 
-                                       average='weighted', labels=classes, zero_division=0)
-
-    return {
-        'classes': classes,
-        'confusion_matrix': c_matrix.tolist(),
-        'accuracy': accuracy,
-        'weighted_avg_precision': weighted_avg_precision,
-        'weighted_avg_recall': weighted_avg_recall,
-        'weighted_avg_f1': weighted_avg_f1,
-        'max_classification_time_ms': max_classification_time_ms,
-        'peak_classification_memory_kb': max_classification_memory_kb
-    }
 
 def process_files(window_size: int, window_overlap: int, model_file_path: Path, input_dir_path: Path, output_dir_path) -> None:
     """
@@ -324,9 +316,9 @@ def process_files(window_size: int, window_overlap: int, model_file_path: Path, 
 
     close_loaded_model(loaded_model)
 
-    report = generate_report(complete_results)
+    report = complete_results.generate_summary()
+    save_to_json_file(output_dir_path, report)
     visualize_confusion_matrix(output_dir_path, report['classes'], report['confusion_matrix'])
-    save_report_to_json_file(output_dir_path, report)
 
 
 if __name__ == '__main__':
