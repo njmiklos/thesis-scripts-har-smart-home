@@ -56,7 +56,21 @@ class ClassificationResults:
         if other.max_classification_memory_kb > self.max_classification_memory_kb:
             self.max_classification_memory_kb = other.max_classification_memory_kb
 
-    def generate_summary(self) -> dict:
+    def infer_classes(self) -> List[str]:
+        """
+        Infers the full set of class labels from ground-truth and predicted annotations
+        from the actual and predicted annotation lists.
+
+        Returns:
+            List[str]: A sorted list of unique annotations.
+        """
+        unique_actual = set(self.actual_annotations)
+        unique_predicted = set(self.predicted_annotations)
+        all_labels = unique_actual.union(unique_predicted)
+        classes = sorted(all_labels)
+        return classes
+
+    def generate_report(self) -> dict:
         """
         Generates a performance report from the aggregated classification results.
 
@@ -76,8 +90,7 @@ class ClassificationResults:
         if self.predicted_annotations is None:
             raise ValueError(f'Predicted annotations list empty, cannot generate a report.')
 
-        classes = infer_classes(self.actual_annotations, self.predicted_annotations)
-
+        classes = self.infer_classes()
         c_matrix = confusion_matrix(self.actual_annotations, self.predicted_annotations, labels=classes)
         accuracy = accuracy_score(self.actual_annotations, self.predicted_annotations)
         weighted_avg_precision = precision_score(self.actual_annotations, self.predicted_annotations, 
@@ -255,23 +268,6 @@ def save_to_json_file(output_dir_path: Path, dictionary: dict, output_file_name:
     with open(output_path, 'w') as f:
         json.dump(dictionary, f, indent=4)
 
-def infer_classes(actual_annotations: List[str], predicted_annotations: List[str]) -> List[str]:
-    """
-    Infer the full set of class labels from ground-truth and predicted annotations.
-
-    Args:
-        actual_annotations (List[str]): The ground-truth annotations.
-        predicted_annotations (List[str]): The predicted annotations.
-
-    Returns:
-        List[str]: A sorted list of unique annotations.
-    """
-    unique_actual = set(actual_annotations)
-    unique_predicted = set(predicted_annotations)
-    all_labels = unique_actual.union(unique_predicted)
-    classes = sorted(all_labels)
-    return classes
-
 def visualize_confusion_matrix(output_dir_path: Path, classes: List[str], confusion_matrix: List[List[int]]) -> None:
     """
     Generate a confusion matrix from JSON data and save it as an image.
@@ -316,7 +312,7 @@ def process_files(window_size: int, window_overlap: int, model_file_path: Path, 
 
     close_loaded_model(loaded_model)
 
-    report = complete_results.generate_summary()
+    report = complete_results.generate_report()
     save_to_json_file(output_dir_path, report)
     visualize_confusion_matrix(output_dir_path, report['classes'], report['confusion_matrix'])
 
