@@ -40,11 +40,11 @@ To run the scripts, you must create a .env file with environment variables for p
 ### .env File Example
 ```
 # Directory Paths
-BASE_PATH=/module_path/
-DATA_PATH=/path_to_data/
-ANNOTATIONS_FILE_PATH=/path_to/annotations.csv
-OUTPUT_PATH=/output_path/
-LOGGING_PATH=/path_to/logs/
+BASE_PATH=/your-path-to-repository/thesis-scripts-har-smart-home/src/
+INPUTS_PATH=/your-path-to-repository/thesis-scripts-har-smart-home/inputs
+ANNOTATIONS_FILE_PATH=/your-path-to-repository/thesis-scripts-har-smart-home/inputs/annotations_transition.csv
+OUTPUTS_PATH=/your-path-to-repository/thesis-scripts-har-smart-home/outputs/
+LOGGING_PATH=/your-path-to-repository/thesis-scripts-har-smart-home/logs/
 
 # Database Connection
 HOST='localhost'
@@ -67,13 +67,13 @@ CHAT_AC_ENDPOINT='https://chat-ai.academiccloud.de/yourEndpoint'
 - My database engine is InfluxDB (version 1.x). The API requires `HOST`, `PORT`, and `DATABASE_NAME`.
 - I used the [Chat Academic Cloud API](https://docs.hpc.gwdg.de/services/saia/index.html) when working with Foundation Models. I needed an API key `CHAT_AC_API_KEY` and an endpoint address `CHAT_AC_ENDPOINT`.
 ## 2. Run Scripts
-Once you have an .env file:
 1. Set your working directory to `thesis-scripts-har-smart-home/src`
 - Open your terminal in `thesis-scripts-har-smart-home/src` or run `cd /path/to/thesis-scripts-har-smart-home/src`.
 2. Invoke the script as a module
 Run: `python3 -m {subdirectory}.{module}`. 
 - Omit the `.py` extension.
 - For top-level scripts (placed directly in `src/`), there is no subdirectory, so simply run: `python3 -m {module}`.
+If you want to run a script that uses an Edge Impulse model, you need to make the model file executable first: `chmod +x '/your/path/to/model/model-file-linux-x86_64-v1.eim'`.
 ### Examples
 - Example 1: If I wanted to run `src/get_env.py`, I would run: `python3 -m get_env`. 
 - Example 2: If I wanted to run `src/ei_tools/classify_eim.py`, I would run: `python3 -m ei_tools.classify_eim`.
