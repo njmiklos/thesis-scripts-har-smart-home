@@ -24,12 +24,17 @@ This repository covers working with timeseries sensor data in preparation for a 
 ```
 # 🛠️ Usage Instructions
 ## 1. Install Dependencies
-There are a couple of libraries I have used. You will need them too in order to run the scripts.
-1. Optional, recommended: Create and activate a virtual environment of your choice.
-2. Optional, recommended: Upgrade pip with `pip install --upgrade pip`.
-3. Navigate to the project's root directory: `cd thesis-scripts-har-smart-home`.
-4. Install all required packages: `pip install -r requirements.txt`.
-5. Optional, recommended: Verify the installation with `pip list`.
+There are a couple of libraries used in this project. You'll need them to run the scripts. 
+1. Make sure you have Python installed with `python --version` or `python3 --version` for higher versions. If no specific version is shown, e.g., `Python 3.10.12`, you need to install Python.
+2. a. Optional, recommended: Create a virtual environment. 
+If you're not familiar with virtual environments, here's a quick guide: A virtual environment is like a container for your project. It keeps your project's packages isolated from the rest of your system, which helps prevent conflicts and clutter. If you delete the environment, everything installed in it disappears with it.
+    i. Choose where to store your environments. I like having a dedicated `venvs` directory in my home folder, which you can also create: `mkdir ~/venvs`.
+    ii. Create a virtual environment in the directory called `shproject` (you can choose a different name, it is only meant to mean something to you because you will be using it): `python3 -m venv ~/venvs/shproject`. To work in it, you need to activate it: `source ~/venvs/shproject/bin/activate`. You can see if the environment is active if its name is in the parentheses in front of you username in the terminal, e.g., `(shproject) user@hostname:~$`. When you are done working in the environment, deactivate it with `deactivate` (`(shproject)` will vanish). 
+2. b. Activate the virtual environment.
+3. Optional, recommended: Upgrade pip with `pip install --upgrade pip`.
+4. Navigate to the project's root directory: `cd thesis-scripts-har-smart-home`.
+5. Install all required packages: `pip install -r requirements.txt`.
+6. Optional, recommended: Verify the installation by listing all packages within the virtual environment: `pip list`. The list should match the content of `requirements.txt`.
 ## 2. Create an .env File
 To run the scripts, you must create a .env file with environment variables for paths and database credentials. The .env file is not included in this repository to protect privacy and security.
 ### .env File Example
