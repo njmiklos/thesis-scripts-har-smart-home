@@ -20,7 +20,7 @@ from pathlib import Path
 from inference.edge_impulse_runner import ImpulseRunner
 from utils.get_env import get_input_path, get_output_path
 from utils.handle_csv import read_csv_to_pandas_dataframe, get_all_csv_files_in_directory
-from inference.classify_eim import load_model, close_loaded_model, segment_and_classify, get_top_prediction
+from inference.classify_eim import load_model, close_loaded_model, classify_window, get_top_prediction
 from inference.visualize_ei_reports import convert_matrix_values_to_percentages
 from data_analysis.visualize_data import generate_confusion_matrix
 
@@ -97,7 +97,7 @@ class ClassificationResults:
 
         classes = self.infer_classes()
         c_matrix = confusion_matrix(self.actual_annotations, self.predicted_annotations, labels=classes)
-        total_no_predictions = c_matrix.sum()
+        total_no_predictions = len(self.predicted_annotations)
         accuracy = accuracy_score(self.actual_annotations, self.predicted_annotations)
         weighted_avg_precision = precision_score(self.actual_annotations, self.predicted_annotations, 
                                             average='weighted', labels=classes, zero_division=0)
@@ -119,7 +119,7 @@ class ClassificationResults:
             'total_classification_time_secs': total_classification_time_secs
         }
 
-def format_for_classification(df: pd.DataFrame) -> List[float]:
+def format_window_for_classification(df: pd.DataFrame) -> List[float]:
     """
     Flattens a DataFrame into a single Python list.
 
@@ -207,6 +207,61 @@ def stop_trace(start_time: float) -> Tuple[float, float]:
     peak_kb = peak_bytes / 1024
     return elapsed_ms, peak_kb
 
+def classify_window_by_window(df: pd.DataFrame, window_size: int, overlap_size: int, 
+    loaded_model: ImpulseRunner) -> Optional['ClassificationResults']:
+    """
+    Segments the input DataFrame into overlapping windows, runs classification on each window,
+    and records the ground truth, model predictions, and the worst-case classification time
+    and memory usage.
+
+    Args:
+        df (pd.DataFrame): Input DataFrame containing at least an 'annotation' column.
+        window_size (int): Number of rows in each window.
+        overlap_size (int): Number of rows that overlap between consecutive windows.
+        loaded_model (ImpulseRunner): Pre-loaded Edge Impulse model runner used for inference.
+
+    Returns:
+        Optional[dict]: Returns None if input validation fails. Otherwise, returns a dict with:
+            - actual_annotations (List[str]): Ground truth annotation from the last row of each window.
+            - predicted_annotations (List[str]): Model's predicted class for each window.
+            - max_classification_time_ms (float): Maximum time in milliseconds taken by any single window classification.
+            - max_classification_memory_kb (float): Maximum memory in kilobytes used by any single window classification.
+    """
+    total_rows = len(df)
+
+    input_valid = validate_input(total_rows, window_size, overlap_size)
+    if not input_valid:
+        return None
+    
+    complete_results = ClassificationResults()
+
+    start_position = 0
+    while start_position + window_size <= total_rows:
+        end_position = start_position + window_size
+        window = df.iloc[start_position : end_position]
+
+        most_common_annotation = df['annotation'].value_counts().idxmax()
+        most_common_annotation = str(most_common_annotation)
+
+        trace_start = start_tracing_time_and_memory()
+        formatted_window = format_window_for_classification(window)
+        classification_result = classify_window(loaded_model, formatted_window)
+        window_classification_time_ms, window_classification_memory_kb = stop_trace(trace_start)
+
+        prediction_class, _ = get_top_prediction(classification_result)
+
+        window_results = ClassificationResults(
+            actual_annotations=[most_common_annotation],
+            predicted_annotations=[prediction_class],
+            max_classification_time_ms=window_classification_time_ms,
+            max_classification_memory_kb=window_classification_memory_kb,
+        )
+        complete_results.update(window_results)
+
+        start_position += (window_size - overlap_size)
+
+    return complete_results
+
 def save_to_json_file(output_dir_path: Path, dictionary: dict, output_file_name: str = 'classification_report.json'):
     """
     Saves the given dictionary to a JSON file.
@@ -237,45 +292,14 @@ def visualize_confusion_matrix(output_dir_path: Path, classes: List[str], confus
 
     generate_confusion_matrix(conf_matrix_percentage, classes, output_dir_path)
 
-def process_file(df: pd.DataFrame, loaded_model: ImpulseRunner) -> 'ClassificationResults':
+def process_files(window_size: int, window_overlap: int, model_file_path: Path, input_dir_path: Path, output_dir_path) -> None:
     """
-    Segments the input DataFrame into overlapping windows, runs classification on each window,
-    and records the ground truth, model predictions, and the worst-case file classification time
-    and memory usage.
-
-    Args:
-        df (pd.DataFrame): Input DataFrame containing at least an 'annotation' column.
-        loaded_model (ImpulseRunner): Pre-loaded Edge Impulse model runner used for inference.
-
-    Returns:
-        dict: Returns a dict with:
-            - actual_annotations (List[str]): Ground truth annotation from the last row of each window.
-            - predicted_annotations (List[str]): Model's predicted class for each window.
-            - max_classification_time_ms (float): Time in milliseconds taken by the file classification.
-            - max_classification_memory_kb (float): Maximum memory in kilobytes during the file classification.
-    """
-    most_common_annotation = df['annotation'].value_counts().idxmax()
-
-    trace_start = start_tracing_time_and_memory()
-    formatted_data = format_for_classification(df)
-    classification_result = segment_and_classify(loaded_model, formatted_data)
-    classification_time_ms, classification_memory_kb = stop_trace(trace_start)
-
-    prediction_class, _ = get_top_prediction(classification_result)
-
-    return ClassificationResults(
-        actual_annotations=[most_common_annotation],
-        predicted_annotations=[prediction_class],
-        max_classification_time_ms=classification_time_ms,
-        max_classification_memory_kb=classification_memory_kb,
-    )
-
-def process_data_files(model_file_path: Path, input_dir_path: Path, output_dir_path) -> None:
-    """
-    Loads the specified Edge Impulse model, processes every CSV file with data in the input directory,
+    Loads the specified Edge Impulse model, processes every CSV file in the input directory,
     and writes a combined report.
 
     Args:
+        window_size (int): Number of rows per sliding window.
+        window_overlap (int): Number of rows to overlap between consecutive windows.
         model_file_path (Path): Filesystem path to the pre-trained Edge Impulse model.
         input_dir_path (Path): Directory containing the input CSV files to process.
         output_dir_path (Path): Directory where the final JSON report will be saved.
@@ -297,10 +321,11 @@ def process_data_files(model_file_path: Path, input_dir_path: Path, output_dir_p
         filename = file.name
         print(f'Segmenting and classifying file {counter}/{n_files} {filename}...')
 
-        df = read_csv_to_pandas_dataframe(file)
-        file_classification_results = process_file(df, loaded_model)
+        episode_df = read_csv_to_pandas_dataframe(file)
+        episode_classification_results = classify_window_by_window(episode_df, window_size, window_overlap, loaded_model)
         
-        complete_classification_results.update(file_classification_results)
+        if episode_classification_results: # i.e. not skipped
+            complete_classification_results.update(episode_classification_results)
 
         counter = counter + 1
 
@@ -317,6 +342,8 @@ def process_data_files(model_file_path: Path, input_dir_path: Path, output_dir_p
 
 if __name__ == '__main__':
     # Parameters to be set
+    window_size = 75
+    window_overlap = 37
     model_file_name = 'single-model-approach-linux-x86_64-v5.eim'
 
     # Paths
@@ -325,4 +352,4 @@ if __name__ == '__main__':
     output_dir_path.mkdir(parents=True, exist_ok=True)
     model_file_path = input_dir_path / model_file_name
 
-    process_data_files(model_file_path, input_dir_path, output_dir_path)
+    process_files(window_size, window_overlap, model_file_path, input_dir_path, output_dir_path)
