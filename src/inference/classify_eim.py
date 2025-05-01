@@ -53,18 +53,18 @@ def parse_data(window: str) -> List[float]:
     
     return features
 
-def classify_window(loaded_model: ImpulseRunner, feature_window: List[float]) -> Dict[str, Any]:
+def segment_and_classify(loaded_model: ImpulseRunner, data: List[float]) -> Dict[str, Any]:
     """
-    Performs classification on a window of data using a loaded model.
+    Performs classification on formatted data using a loaded model.
 
     Args:
         loaded_model (ImpulseRunner): The initialized model for classification.
-        feature_window (List[float]): A list of floats with data to classify.
+        data (List[float]): A list of floats with data to classify.
 
     Returns:
         Dict[str, Any]: Classification result and metadata.
     """
-    classification_result = loaded_model.classify(feature_window)
+    classification_result = loaded_model.classify(data)
     return classification_result
 
 def normalize_probability(probability: float) -> float:
@@ -148,7 +148,7 @@ if __name__ == '__main__':
     # Run classification pipeline
     loaded_model = load_model(model_file_path)
     feature_window = parse_data(data)
-    classification_result = classify_window(loaded_model, feature_window)
+    classification_result = segment_and_classify(loaded_model, feature_window)
     print_classification_summary(classification_result)
     print(f'Highest scored class: {get_top_prediction(classification_result)}')
     close_loaded_model(loaded_model)
