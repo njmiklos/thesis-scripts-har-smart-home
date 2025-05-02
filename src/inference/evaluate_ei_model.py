@@ -9,115 +9,20 @@ except for the timestamp column and the annotation column.
 """
 import pandas as pd
 import numpy as np
-from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, f1_score, recall_score
 import time
-import tracemalloc
 import json
 
-from typing import List, Tuple, Optional
+from typing import List, Optional
 from pathlib import Path
 
 from inference.edge_impulse_runner import ImpulseRunner
 from utils.get_env import get_path_from_env
 from utils.handle_csv import read_csv_to_pandas_dataframe, get_all_csv_files_in_directory
 from inference.classify_with_ei_model import load_model, close_loaded_model, classify_window, get_top_prediction
+from inference.evaluation_utils import ClassificationResults, TimeMemoryTracer
 from inference.visualize_ei_report import convert_matrix_values_to_percentages
 from data_analysis.visualize_data import generate_confusion_matrix
 
-
-class ClassificationResults:
-    """
-    An object holding aggregate classification results containing:
-        - 'actual_annotations' (Optional[List[str]]): combined list of all actual annotations
-        - 'predicted_annotations' (Optional[List[str]]): combined list of all predicted annotations
-        - 'max_classification_time_ms' (float): the highest classification time (ms) observed
-        - 'max_classification_memory_kb' (float): the highest memory usage (kB) observed
-    """
-    def __init__(self, actual_annotations: Optional[List[str]] = None, predicted_annotations: Optional[List[str]] = None,
-        max_classification_time_ms: float = 0.0, max_classification_memory_kb: float = 0.0) -> None:
-        if max_classification_time_ms < 0:
-            raise ValueError(f'Time must be larger than 0, got {max_classification_time_ms} ms')
-        if max_classification_time_ms < 0 or max_classification_memory_kb < 0:
-            raise ValueError(f'Memory must be larger than 0, got {max_classification_memory_kb} kb.')
-
-        self.actual_annotations = actual_annotations if actual_annotations is not None else []
-        self.predicted_annotations = predicted_annotations if predicted_annotations is not None else []
-        self.max_classification_time_ms = max_classification_time_ms
-        self.max_classification_memory_kb = max_classification_memory_kb
-
-    def update(self, other: 'ClassificationResults') -> None:
-        """
-        Merges another ClassificationResults into this one, in place.
-        """
-        self.actual_annotations.extend(other.actual_annotations)
-        self.predicted_annotations.extend(other.predicted_annotations)
-        if other.max_classification_time_ms > self.max_classification_time_ms:
-            self.max_classification_time_ms = other.max_classification_time_ms
-        if other.max_classification_memory_kb > self.max_classification_memory_kb:
-            self.max_classification_memory_kb = other.max_classification_memory_kb
-
-    def infer_classes(self) -> List[str]:
-        """
-        Infers the full set of class labels from ground-truth and predicted annotations
-        from the actual and predicted annotation lists.
-
-        Returns:
-            List[str]: A sorted list of unique annotations.
-        """
-        unique_actual = set(self.actual_annotations)
-        unique_predicted = set(self.predicted_annotations)
-        all_labels = unique_actual.union(unique_predicted)
-        classes = sorted(all_labels)
-        return classes
-
-    def generate_report(self, total_classification_time_secs: float) -> dict:
-        """
-        Generates a performance report from the aggregated classification results.
-
-        Args:
-            total_classification_time_secs (float): Total classification time in seconds.
-
-        Returns:
-            dict: A report containing:
-                - 'classes' (List[str]): A sorted list of unique true and false annotations.
-                - 'confusion_matrix' (List[List[int]]): Confusion matrix between true and predicted labels.
-                - 'total_no_predictions' (int): Total number of predictions made (i.e., number of windows).
-                - 'accuracy' (float): Overall classification accuracy.
-                - 'weighted_avg_precision' (float): Weighted average precision.
-                - 'weighted_avg_recall' (float): Weighted average recall.
-                - 'weighted_avg_f1_score' (float): Weighted average F1 score.
-                - 'classification_time_ms' (float): The worst-case classification time (ms).
-                - 'peak_memory_kb' (float): The worst-case memory usage (kB),
-                - 'total_classification_time_secs' (float): Total classification time in seconds.
-        """
-        if self.actual_annotations is None:
-            raise ValueError(f'Actual annotations list empty, cannot generate a report.')
-        if self.predicted_annotations is None:
-            raise ValueError(f'Predicted annotations list empty, cannot generate a report.')
-
-        classes = self.infer_classes()
-        c_matrix = confusion_matrix(self.actual_annotations, self.predicted_annotations, labels=classes)
-        total_no_predictions = len(self.predicted_annotations)
-        accuracy = accuracy_score(self.actual_annotations, self.predicted_annotations)
-        weighted_avg_precision = precision_score(self.actual_annotations, self.predicted_annotations, 
-                                            average='weighted', labels=classes, zero_division=0)
-        weighted_avg_recall = recall_score(self.actual_annotations, self.predicted_annotations, 
-                                        average='weighted', labels=classes, zero_division=0)
-        weighted_avg_f1 = f1_score(self.actual_annotations, self.predicted_annotations, 
-                                        average='weighted', labels=classes, zero_division=0)
-
-        return {
-            'classes': classes,
-            'confusion_matrix': c_matrix.tolist(),
-            'total_no_predictions': total_no_predictions,
-            'accuracy': accuracy,
-            'weighted_avg_precision': weighted_avg_precision,
-            'weighted_avg_recall': weighted_avg_recall,
-            'weighted_avg_f1': weighted_avg_f1,
-            'max_classification_time_ms': self.max_classification_time_ms,
-            'peak_classification_memory_kb': self.max_classification_memory_kb,
-            'total_classification_time_secs': total_classification_time_secs
-        }
 
 def format_window_for_classification(df: pd.DataFrame) -> List[float]:
     """
@@ -177,36 +82,6 @@ def validate_input(total_rows: int, window_size: int, overlap_size: int) -> bool
 
     return True
 
-def start_tracing_time_and_memory() -> float:
-    """
-    Starts timing and memory tracing.
-
-    Returns:
-        The start timestamp (time.perf_counter()).
-    """
-    tracemalloc.start()
-    return time.perf_counter()
-
-def stop_trace(start_time: float) -> Tuple[float, float]:
-    """
-    Stops timing and memory tracing, and reports the elapsed time and peak memory.
-
-    Args:
-        start_time: The timestamp returned by start_trace().
-
-    Returns:
-        Tuple[float, float]:
-          - elapsed_ms: milliseconds elapsed since start_time
-          - peak_kb: peak memory (in KB) during the trace
-    """
-    end_time = time.perf_counter()
-    _, peak_bytes = tracemalloc.get_traced_memory()
-    tracemalloc.stop()
-
-    elapsed_ms = (end_time - start_time) * 1000
-    peak_kb = peak_bytes / 1024
-    return elapsed_ms, peak_kb
-
 def classify_window_by_window(df: pd.DataFrame, window_size: int, overlap_size: int, 
     loaded_model: ImpulseRunner) -> Optional['ClassificationResults']:
     """
@@ -243,10 +118,10 @@ def classify_window_by_window(df: pd.DataFrame, window_size: int, overlap_size: 
         most_common_annotation = df['annotation'].value_counts().idxmax()
         most_common_annotation = str(most_common_annotation)
 
-        trace_start = start_tracing_time_and_memory()
+        trace = TimeMemoryTracer()
         formatted_window = format_window_for_classification(window)
         classification_result = classify_window(loaded_model, formatted_window)
-        window_classification_time_ms, window_classification_memory_kb = stop_trace(trace_start)
+        window_classification_time_ms, window_classification_memory_kb = trace.stop()
 
         prediction_class, _ = get_top_prediction(classification_result)
 
@@ -307,7 +182,7 @@ def process_files(window_size: int, window_overlap: int, model_file_path: Path, 
     Returns:
         None
     """
-    start_time_in_secs = time.time()
+    start_time_in_secs = time.perf_counter()
 
     files = get_all_csv_files_in_directory(input_dir_path)
     n_files = len(files)
@@ -332,7 +207,7 @@ def process_files(window_size: int, window_overlap: int, model_file_path: Path, 
     close_loaded_model(loaded_model)
     print(f'Done.')
 
-    end_time_in_secs = time.time()
+    end_time_in_secs = time.perf_counter()
     total_classification_time_secs = end_time_in_secs - start_time_in_secs
 
     report = complete_classification_results.generate_report(total_classification_time_secs)
