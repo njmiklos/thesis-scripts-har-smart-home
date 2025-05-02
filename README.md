@@ -73,7 +73,7 @@ CHAT_AC_ENDPOINT='https://chat-ai.academiccloud.de/yourEndpoint'
 Run: `python3 -m {subdirectory}.{module}`. 
 - Omit the `.py` extension.
 - For top-level scripts (placed directly in `src/`), there is no subdirectory, so simply run: `python3 -m {module}`.
-If you want to run a script that uses an Edge Impulse model, you need to make the model file executable first: `chmod +x '/your/path/to/model/model-file-linux-x86_64-v1.eim'`.
+- If you want to run a script that uses an Edge Impulse model, you need to make the model file executable first: `chmod +x '/your/path/to/model/model-file-name-os-architecture-version.eim'`.
 ### Examples
 - Example 1: If I wanted to run `src/get_env.py`, I would run: `python3 -m get_env`. 
 - Example 2: If I wanted to run `src/ei_tools/classify_eim.py`, I would run: `python3 -m ei_tools.classify_eim`.
