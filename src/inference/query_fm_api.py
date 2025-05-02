@@ -126,10 +126,26 @@ def get_request_token_usage(system_response: requests.Response) -> Dict[str, int
         system_response (requests.Response): The HTTP response object.
 
     Returns:
-        Dict[str, int]: A dictionary containing token usage details.
+        Dict[str, int]: A dictionary containing token usage details:
+        - 'prompt_tokens': Tokens describing the size of user's input.
+        - 'completion_tokens': Tokens the model needs to generate a response.
+        - 'total_tokens': The sum of prompt and completion tokens.
     """
     exchange_tokens = system_response.json()['usage']
     return exchange_tokens
+
+def get_request_total_tokens(system_response: requests.Response) -> int:
+    """
+    Extracts sum of prompt and completion tokens from the response.
+
+    Args:
+        system_response (requests.Response): The HTTP response object.
+
+    Returns:
+        total_tokens (int): The sum of prompt and completion tokens.
+    """
+    exchange_tokens = get_request_token_usage(system_response)
+    return exchange_tokens['total_tokens']
 
 def get_rate_limits(system_response: requests.Response) -> Dict[str, int]:
     """
