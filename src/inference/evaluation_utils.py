@@ -8,10 +8,11 @@ from typing import List, Optional, Tuple
 class ClassificationResults:
     """
     An object holding aggregate classification results containing:
-        - 'actual_annotations' (Optional[List[str]]): combined list of all actual annotations
-        - 'predicted_annotations' (Optional[List[str]]): combined list of all predicted annotations
-        - 'max_classification_time_ms' (float): the highest classification time (ms) observed
-        - 'max_classification_memory_kb' (float): the highest memory usage (kB) observed
+        actual_annotations (Optional[List[str]]): Combined list of all actual annotations.
+        predicted_annotations (Optional[List[str]]): Combined list of all predicted annotations.
+        max_classification_time_ms (float): The highest classification time (ms) observed.
+        max_classification_memory_kb (float): The highest memory usage (kB) observed.
+        total_prompt_tokens (int): The total number of tokens needed for the classification.
     """
     def __init__(self, actual_annotations: Optional[List[str]] = None, predicted_annotations: Optional[List[str]] = None,
         max_classification_time_ms: float = 0.0, max_classification_memory_kb: float = 0.0) -> None:
