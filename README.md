@@ -76,10 +76,8 @@ Run: `python3 -m subdirectory.module-name`.
 - Omit the `.py` extension.
 - Mind `.` instead of `/` between the directory and module name.
 - For top-level scripts (placed directly in `src/`), there is no subdirectory, so simply run: `python3 -m module-name`.
-- If you want to run a script that uses an Edge Impulse model, you need to make the model file executable first: `chmod +x '/your-path/to-model/model-file-name-os-architecture-version.eim'`.
-### Examples
-- Example 1: If I wanted to run `src/get_env.py`, I would run: `python3 -m get_env`. 
-- Example 2: If I wanted to run `src/inference/classify_eim.py`, I would run: `python3 -m inference.classify_eim`.
+- If you want to run a script that uses an Edge Impulse model, you need to make the model file executable first: `chmod +x '/your-path/to-model/model-file-name-os-architecture-version.eim'`.  
+_Example_: If I wanted to run `src/inference/classify_with_ei_model.py`, I would run: `python3 -m inference.classify_with_ei_model`.
 # 🚀 Example Pipeline (WIP, TODO)
 1. Data Collection:
     - Create an Annotation File: List all annotated episodes and parse them using `parse_annotation_file.py` to ensure compatibility with other scripts.
