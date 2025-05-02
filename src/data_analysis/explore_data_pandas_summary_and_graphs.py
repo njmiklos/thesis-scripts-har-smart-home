@@ -3,7 +3,7 @@ from pathlib import Path
 
 from typing import List, Tuple, Optional
 
-from utils.get_env import get_base_path
+from utils.get_env import get_path_from_env
 from data_processing.infer_sensor_metadata import infer_unit
 from utils.handle_csv import read_csv_to_pandas_dataframe, save_pandas_dataframe_to_csv, get_all_csv_files_in_directory
 from data_analysis.explore_data_pandas import get_quick_stats_dict, get_root_mean_square_error_srs
@@ -343,7 +343,7 @@ def check_if_directory_exists(directory: Path) -> None:
 
 
 if __name__ == "__main__":
-    base_path = get_base_path()
+    base_path = get_path_from_env('BASE_PATH')
 
     # Set before running
     modification = 'Synchronized'

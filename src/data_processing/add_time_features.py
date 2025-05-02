@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 
-from utils.get_env import get_input_path, get_output_path
+from utils.get_env import get_path_from_env
 from utils.handle_csv import read_csv_to_pandas_dataframe, save_pandas_dataframe_to_csv, get_all_csv_files_in_directory
 from data_processing.convert_timestamps import convert_timestamps_from_miliseconds_to_localized_datetime_srs
 
@@ -241,8 +241,8 @@ def process_files(input_dir: Path, output_dir: Path, transforms: list) -> None:
 
 
 if __name__ == '__main__':
-    input_path = get_input_path()
-    output_path = get_output_path()
+    input_path = get_path_from_env('INPUTS_PATH')
+    output_path = get_path_from_env('OUTPUTS_PATH')
 
     input_path_training = input_path
     input_path_testing = input_path / 'testing'

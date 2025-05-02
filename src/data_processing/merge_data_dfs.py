@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Optional
 
 from utils.handle_csv import get_all_csv_files_in_directory, read_csv_to_pandas_dataframe, save_pandas_dataframe_to_csv
-from utils.get_env import get_base_path
+from utils.get_env import get_path_from_env
 from data_analysis.summarize_classes import prefix_column_names_with_device_sensor_function
 from data_processing.convert_timestamps import (convert_timestamps_from_miliseconds_to_localized_datetime, 
                                                 convert_timestamps_from_localized_datetime_to_miliseconds)
@@ -260,7 +260,7 @@ def merge_and_save_synchronized_files(dataset_path: Path, output_path: Path, ski
 
 
 if __name__ == '__main__':
-    base_path = get_base_path()
+    base_path = get_path_from_env('BASE_PATH')
 
     # Adjust before running
     dataset_path = base_path / 'Dataset Transition Activities'

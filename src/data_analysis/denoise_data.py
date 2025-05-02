@@ -2,7 +2,7 @@ import pandas as pd
 from pathlib import Path
 
 from utils.handle_csv import get_all_csv_files_in_directory, save_pandas_dataframe_to_csv
-from utils.get_env import get_base_path
+from utils.get_env import get_path_from_env
 from data_processing.infer_sensor_metadata import infer_precision
 from data_analysis.explore_data_pandas import calculate_thresholds
 
@@ -97,7 +97,7 @@ def process_file_in_chunks(file_path: Path, window: int, chunk_size=2000):
 
 
 if __name__ == '__main__':
-    base_path = get_base_path()
+    base_path = get_path_from_env('BASE_PATH')
 
     # Set before running
     dataset_org_path = base_path / f'Raw_relevant_resampled_0'

@@ -18,7 +18,7 @@ from typing import List, Tuple, Optional
 from pathlib import Path
 
 from inference.edge_impulse_runner import ImpulseRunner
-from utils.get_env import get_input_path, get_output_path
+from utils.get_env import get_path_from_env
 from utils.handle_csv import read_csv_to_pandas_dataframe, get_all_csv_files_in_directory
 from inference.classify_eim import load_model, close_loaded_model, classify_window, get_top_prediction
 from inference.visualize_ei_reports import convert_matrix_values_to_percentages
@@ -344,11 +344,11 @@ if __name__ == '__main__':
     # Parameters to be set
     window_size = 75
     window_overlap = 37
-    model_file_name = 'single-model-approach-linux-x86_64-v5.eim'
 
     # Paths
-    input_dir_path = get_input_path()
-    output_dir_path = get_output_path()
+    input_dir_path = get_path_from_env('INPUTS_PATH')
+    output_dir_path = get_path_from_env('OUTPUTS_PATH')
+    model_file_name = get_path_from_env('MODEL_PATH')
     output_dir_path.mkdir(parents=True, exist_ok=True)
     model_file_path = input_dir_path / model_file_name
 

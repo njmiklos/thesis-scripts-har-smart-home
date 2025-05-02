@@ -8,7 +8,7 @@ In the file, every episode is a row. It must include the following columns:
 """
 import pandas as pd
 
-from utils.get_env import get_annotations_file_path, get_output_path
+from utils.get_env import get_path_from_env
 from utils.handle_csv import read_csv_to_pandas_dataframe, save_pandas_dataframe_to_csv
 
 
@@ -111,7 +111,7 @@ def annotate_gaps(annotations: pd.DataFrame) -> pd.DataFrame:
 
 
 if __name__ == '__main__':
-    path_annotation_file = get_annotations_file_path()
+    path_annotation_file = get_path_from_env('ANNOTATIONS_FILE_PATH')
 
     annotations = read_csv_to_pandas_dataframe(path_annotation_file)
     parse_timestamps(annotations)
@@ -120,6 +120,6 @@ if __name__ == '__main__':
 
     annotations_with_annotated_gaps = annotate_gaps(annotations)
     file_out = 'annotations_combined_with_annotated_gaps.csv'
-    path_out =  get_output_path() / file_out
+    path_out =  get_path_from_env('OUTPUTS_PATH') / file_out
     save_pandas_dataframe_to_csv(annotations_with_annotated_gaps, path_out)
 

@@ -1,9 +1,9 @@
 import pandas as pd
 
 from utils.handle_csv import read_csv_to_pandas_dataframe, save_pandas_dataframe_to_csv
-from utils.get_env import get_base_path
+from utils.get_env import get_path_from_env
 
-base_path = get_base_path()
+base_path = get_path_from_env('BASE_PATH')
 
 # Load the new CSV file
 file_in_path = base_path / 'Synchronized_annotated' / 'summary_classes_synced_merged_selected.csv'

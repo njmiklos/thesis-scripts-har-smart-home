@@ -1,11 +1,11 @@
-from utils.get_env import get_base_path
+from utils.get_env import get_path_from_env
 from utils.handle_csv import read_csv_to_pandas_dataframe
 from data_analysis.visualize_data import generate_timeseries_plot, generate_scatter_plot
 from data_processing.filter_df import filter_by_date
 
 
 if __name__ == '__main__':
-    base_path = get_base_path()
+    base_path = get_path_from_env('BASE_PATH')
     database_path = base_path / 'Synchronized'
     database_file_path = database_path / 'synchronized_merged_selected.csv'
     output_path_whole_period_graphs = database_path / 'Graphs_whole_period'

@@ -8,7 +8,7 @@ import numpy as np
 
 from pathlib import Path
 
-from utils.get_env import get_input_path, get_output_path
+from utils.get_env import get_path_from_env
 from utils.handle_csv import read_csv_to_pandas_dataframe
 from data_analysis.visualize_data import generate_confusion_matrix, generate_comparative_timeseries_plot
 
@@ -96,9 +96,9 @@ if __name__ == '__main__':
     classification_report_file_name = 'model-routines-testing-results.json'
     training_process_file_name = 'epochs.csv'
 
-    classification_report_path = get_input_path() / classification_report_file_name
-    training_process_file_path = get_input_path() / training_process_file_name
-    output_dir_path = get_output_path()
+    classification_report_path = get_path_from_env('INPUTS_PATH') / classification_report_file_name
+    training_process_file_path = get_path_from_env('INPUTS_PATH') / training_process_file_name
+    output_dir_path = get_path_from_env('OUTPUTS_PATH')
     output_dir_path.mkdir(parents=True, exist_ok=True)
 
     report = load_json_file(classification_report_path)

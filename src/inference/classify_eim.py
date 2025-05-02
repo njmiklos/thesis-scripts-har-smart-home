@@ -7,7 +7,7 @@ as "edge_impulse_runner.py" in the same directory ("src").
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Tuple
 
-from utils.get_env import get_input_path, get_output_path
+from utils.get_env import get_path_from_env
 from inference.edge_impulse_runner import ImpulseRunner
 
 
@@ -135,9 +135,9 @@ def close_loaded_model(loaded_model: Optional[ImpulseRunner]) -> None:
 
 if __name__ == '__main__':
     # Paths
-    input_dir_path = get_input_path()
+    input_dir_path = get_path_from_env('INPUTS_PATH')
     model_file_path = input_dir_path / 'single-model-approach-linux-x86_64-v5.eim'
-    output_dir_path = get_output_path()
+    output_dir_path = get_path_from_env('OUTPUTS_PATH')
     output_dir_path.mkdir(parents=True, exist_ok=True)
 
     # Some txt window data

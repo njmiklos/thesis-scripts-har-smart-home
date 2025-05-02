@@ -1,7 +1,7 @@
 import pandas as pd
 from pathlib import Path
 
-from utils.get_env import get_input_path, get_output_path
+from utils.get_env import get_path_from_env
 from utils.handle_csv import read_csv_to_pandas_dataframe, save_pandas_dataframe_to_csv, get_all_csv_files_in_directory
 
 
@@ -73,8 +73,8 @@ def process_data_files(path_dataset: Path, path_output_dataset: Path, path_annot
 
 
 if __name__ == '__main__':
-    input_dir_path = get_input_path()
-    output_dir_path = get_output_path()
+    input_dir_path = get_path_from_env('INPUTS_PATH')
+    output_dir_path = get_path_from_env('OUTPUTS_PATH')
     output_dir_path.mkdir(parents=True, exist_ok=True)
 
     path_annotation_file = input_dir_path / 'annotations_combined.csv'

@@ -5,7 +5,7 @@ import pandas as pd
 from pathlib import Path
 from typing import List
 
-from utils.get_env import get_base_path
+from utils.get_env import get_path_from_env
 from utils.handle_csv import get_all_csv_files_in_directory, read_csv_to_pandas_dataframe, save_pandas_dataframe_to_csv
 
 
@@ -100,7 +100,7 @@ def process_file(file_path: Path) -> pd.DataFrame:
 
 
 if __name__ == '__main__':
-    base_path = get_base_path()
+    base_path = get_path_from_env('BASE_PATH')
     dataset_path = base_path / 'Synchronized_annotated'
     annotations_path = base_path / 'annotations_combined.csv'
     summary_path = dataset_path / 'summary_classes_synced.csv'

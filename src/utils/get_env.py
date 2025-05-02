@@ -4,76 +4,20 @@ from pathlib import Path
 from typing import Tuple
 
 
-def get_base_path() -> Path:
+def get_path_from_env(var_name: str) -> Path:
     """
-    Fetches the directory path 'BASE_PATH' of the entire module from the .env file.
+    Fetches the directory path of the specified variable from the .env file.
 
     Raises a ValueError if it is not defined in the .env file.
 
     Returns:
-        Path: The base path.
+        Path: The path of the specified variable.
     """
     load_dotenv()
-    path = os.getenv('BASE_PATH')
-    if not path:
-        raise ValueError('BASE_PATH is not set in the .env file.')
-    return Path(path)
-
-def get_logging_path() -> Path:
-    """
-    Fetches the logging path 'LOGGING_PATH' from the .env file.
-    Raises a ValueError if it is not defined in the .env file.
-
-    Returns:
-        Path: The logging path.
-    """
-    load_dotenv()
-    path = os.getenv('LOGGING_PATH')
-    if not path:
-        raise ValueError('LOGGING_PATH is not set in the .env file.')
-    return Path(path)
-
-def get_output_path() -> Path:
-    """
-    Fetches the output path 'OUTPUTS_PATH' from the .env file.
-    Raises a ValueError if it is not defined in the .env file.
-
-    Returns:
-        Path: The output path.
-    """
-    load_dotenv()
-    path = os.getenv('OUTPUTS_PATH')
-    if not path:
-        raise ValueError('OUTPUTS_PATH is not set in the .env file.')
-    return Path(path)
-
-def get_input_path() -> Path:
-    """
-    Fetches the data path 'INPUTS_PATH' from the .env file.
-    Raises a ValueError if it is not defined in the .env file.
-
-    Returns:
-        Path: The data path.
-    """
-    load_dotenv()
-    path = os.getenv('INPUTS_PATH')
-    if not path:
-        raise ValueError('INPUTS_PATH is not set in the .env file.')
-    return Path(path)
-
-def get_annotations_file_path() -> Path:
-    """
-    Fetches the data path 'ANNOTATIONS_FILE_PATH' from the .env file.
-    Raises a ValueError if it is not defined in the .env file.
-
-    Returns:
-        Path: The file path.
-    """
-    load_dotenv()
-    path = os.getenv('ANNOTATIONS_FILE_PATH')
-    if not path:
-        raise ValueError('ANNOTATIONS_FILE_PATH is not set in the .env file.')
-    return Path(path)
+    value = os.getenv(var_name)
+    if not value:
+        raise ValueError(f'{var_name} is not set in the .env file.')
+    return Path(value)
 
 def get_database_info() -> Tuple[str, int, str]:
     """

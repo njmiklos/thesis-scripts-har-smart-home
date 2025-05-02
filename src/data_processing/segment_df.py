@@ -2,7 +2,7 @@ import pandas as pd
 from typing import List
 from pathlib import Path
 
-from utils.get_env import get_input_path, get_output_path
+from utils.get_env import get_path_from_env
 from utils.handle_csv import read_csv_to_pandas_dataframe, save_pandas_dataframe_to_csv
 from data_processing.infer_metadata import infer_data_collection_days_from_time_column
 from data_processing.filter_df import filter_by_timestamp, filter_by_date
@@ -278,10 +278,10 @@ def segment_into_windows(df: pd.DataFrame, window_size: int, overlap_size: int, 
 
 if __name__ == '__main__':
     # Paths
-    #annotated_episodes_path = get_annotations_file_path()
+    #annotated_episodes_path = get_path_from_env('ANNOTATIONS_FILE_PATH')
     input_file_name = 'synchronized_merged_selected_annotated_new_col_names.csv'
-    input_dataset_path = get_input_path() / input_file_name
-    output_path = get_output_path()
+    input_dataset_path = get_path_from_env('INPUTS_PATH') / input_file_name
+    output_path = get_path_from_env('OUTPUTS_PATH')
 
     # Read datasets
     dataset_df = read_csv_to_pandas_dataframe(input_dataset_path)

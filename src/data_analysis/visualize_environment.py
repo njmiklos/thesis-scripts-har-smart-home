@@ -8,7 +8,7 @@ import pandas as pd
 from pathlib import Path
 from typing import List, Optional
 
-from utils.get_env import get_input_path, get_output_path
+from utils.get_env import get_path_from_env
 from utils.handle_csv import read_csv_to_pandas_dataframe, get_all_csv_files_in_directory
 from data_analysis.visualize_data import generate_timeseries_plot
 
@@ -133,11 +133,11 @@ def process_files(input_dir: Path, output_dir: Path) -> None:
 
 
 if __name__ == '__main__':
-    input_path = get_input_path()
+    input_path = get_path_from_env('INPUTS_PATH')
     if not input_path.exists():
         raise FileNotFoundError(f'Input directory {input_path} does not exist.')
     
-    output_path = get_output_path()
+    output_path = get_path_from_env('OUTPUTS_PATH')
     output_path.mkdir(parents=True, exist_ok=True)
 
     process_files(input_path, output_path)

@@ -5,7 +5,7 @@ import pandas as pd
 from data_processing.convert_timestamps import convert_timestamps_from_miliseconds_to_localized_datetime
 from data_analysis.explore_data_pandas import count_readings_out_of_range, calculate_thresholds, get_interquartile_range, get_iqr_relative_to_whole_value_range
 from data_processing.infer_sensor_metadata import infer_expected_sampling_rate
-from utils.get_env import get_base_path
+from utils.get_env import get_path_from_env
 from utils.get_logger import get_logger
 from utils.handle_csv import read_csv_to_pandas_dataframe, get_all_csv_files_in_directory
 
@@ -229,7 +229,7 @@ def process_file(logger: logging.Logger) -> None:
 
 
 if __name__ == '__main__':
-    base_path = get_base_path()
+    base_path = get_path_from_env('BASE_PATH')
 
     # Set before running
     log_filename = 'explore_data_pandas_singles_raw'

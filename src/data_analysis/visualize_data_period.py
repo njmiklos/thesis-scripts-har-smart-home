@@ -1,11 +1,11 @@
-from utils.get_env import get_base_path
+from utils.get_env import get_path_from_env
 from utils.handle_csv import read_csv_to_pandas_dataframe, get_all_csv_files_in_directory
 from data_analysis.visualize_data import generate_timeseries_plot
 from data_processing.filter_df import filter_by_date, filter_by_time_range
 
 
 if __name__ == '__main__':
-    base_path = get_base_path()
+    base_path = get_path_from_env('BASE_PATH')
     data_path = base_path / 'Synchronized'
     plot_output_path = data_path / 'Graphs_one_day'
 

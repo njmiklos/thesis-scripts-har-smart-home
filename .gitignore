@@ -5,3 +5,4 @@ inputs
 drafts
 __pycache__
 edge_impulse_runner.py
+src/template.py

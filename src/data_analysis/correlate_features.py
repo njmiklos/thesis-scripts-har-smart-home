@@ -1,12 +1,12 @@
 from utils.handle_csv import save_pandas_dataframe_to_csv
-from utils.get_env import get_base_path
+from utils.get_env import get_path_from_env
 
 from data_processing.merge_data_dfs import merge_synchronized_files_into_single_df
 from data_analysis.visualize_data import generate_heatmap
 
 
 if __name__ == '__main__':
-    base_path = get_base_path()
+    base_path = get_path_from_env('BASE_PATH')
 
     # Adjust before running
     input_dataset_path = base_path / 'Synchronized'

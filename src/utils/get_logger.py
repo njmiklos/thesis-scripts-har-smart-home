@@ -1,6 +1,6 @@
 import logging
 
-from get_env import get_base_path
+from utils.get_env import get_path_from_env
 
 
 def get_logger(module_name: str):
@@ -13,7 +13,7 @@ def get_logger(module_name: str):
     Returns:
         logging.Logger: Configured logger instance.
     """
-    base_path = get_base_path()
+    base_path = get_path_from_env('BASE_PATH')
     log_file = base_path / 'logs' / f'{module_name}.log'
 
     logger = logging.getLogger(module_name)

@@ -88,7 +88,7 @@ def process_directories(input_dir: Path) -> None:
 
 
 if __name__ == '__main__':
-    input_path = get_input_path()
+    input_path = get_path_from_env('INPUTS_PATH')
     if not input_path.exists():
         raise FileNotFoundError(f'Input directory {input_path} does not exist.')
 

@@ -3,7 +3,7 @@ from influxdb import InfluxDBClient
 from typing import Any
 
 from data_processing.convert_timestamps import convert_timestamps_from_iso8601_to_localized_datetime
-from utils.get_env import get_base_path, get_database_info
+from utils.get_env import get_path_from_env, get_database_info
 from utils.handle_csv import save_pandas_dataframe_to_csv
 
 
@@ -88,7 +88,7 @@ def formulate_query(device_no: str, measurement: str, values_col: str, ts_start:
 
 
 if __name__ == '__main__':
-    base_path = get_base_path()
+    base_path = get_path_from_env('BASE_PATH')
 
     # Set before running
     device_no = '1'

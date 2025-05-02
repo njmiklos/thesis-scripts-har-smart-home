@@ -42,9 +42,9 @@ To run the scripts, you must create a .env file with environment variables for p
 # Directory Paths
 BASE_PATH=/your-path-to-repository/thesis-scripts-har-smart-home/src/
 INPUTS_PATH=/your-path-to-repository/thesis-scripts-har-smart-home/inputs
-ANNOTATIONS_FILE_PATH=/your-path-to-repository/thesis-scripts-har-smart-home/inputs/annotations_transition.csv
+ANNOTATIONS_FILE_PATH=/your-path-to-repository/thesis-scripts-har-smart-home/inputs/file-with-annotations.csv
 OUTPUTS_PATH=/your-path-to-repository/thesis-scripts-har-smart-home/outputs/
-LOGGING_PATH=/your-path-to-repository/thesis-scripts-har-smart-home/logs/
+MODEL_PATH=/your-path-to-repository/thesis-scripts-har-smart-home/inputs/model-file-name.eim
 
 # Database Connection
 HOST='localhost'
@@ -63,7 +63,7 @@ CHAT_AC_ENDPOINT='https://chat-ai.academiccloud.de/yourEndpoint'
     - `end`: Episode end time (see the format above).
     - `annotation`: Activity class (e.g., 'sleeping', 'airing').
 - `OUTPUT_PATH`: Directory for storing all output files.
-- `LOGGING_PATH`: Directory for structured logs.
+- `MODEL_PATH`: Path to an Edge Impulse model file (`*.eim`).
 - My database engine is InfluxDB (version 1.x). The API requires `HOST`, `PORT`, and `DATABASE_NAME`.
 - I used the [Chat Academic Cloud API](https://docs.hpc.gwdg.de/services/saia/index.html) when working with Foundation Models. I needed an API key `CHAT_AC_API_KEY` and an endpoint address `CHAT_AC_ENDPOINT`.
 ## 3. Run Scripts
