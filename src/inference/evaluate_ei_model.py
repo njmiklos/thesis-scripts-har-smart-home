@@ -1,11 +1,11 @@
 """
 This code segments an annotated dataset into windows, classifies them, and summarizes the results. 
-The purpose is to test an EI model locally.
+The purpose is to test EI models locally.
 
 It is recommended to first segment the dataset into episodes. This ensures that less data is loaded into memory at once.
 
-The data is expected to contain only those columns that were used in training, 
-except for the timestamp column and the annotation column.
+In my thesis, each window was processed by three specialized DL models. Each model predicted a class and its confidence. 
+The highest-confidence prediction was selected as the final output and saved for the window.
 """
 import pandas as pd
 import numpy as np
@@ -24,15 +24,67 @@ from data_analysis.visualize_ei_report import convert_matrix_values_to_percentag
 from data_analysis.visualize_data import generate_confusion_matrix
 
 
-def format_window_for_classification(df: pd.DataFrame) -> List[float]:
+def get_column_set(model: str) -> List[str]:
+    """
+    Returns the list of columns expected by the specified model.
+
+    Args:
+        model (str): One of 'single', 'transitions', 'routines', 'food'.
+    
+    Returns:
+        List[str]: The expected columns for that model.
+    """
+    column_sets = {
+        'single' : ['kitchen humidity [%]', 'kitchen luminosity [Lux]', 'kitchen magnitude accelerometer [m/s²]', 
+                    'kitchen temperature [°C]', 'entrance humidity [%]', 'entrance luminosity [Lux]', 
+                    'entrance magnitude accelerometer [m/s²]', 'entrance temperature [°C]', 'living room humidity [%]', 
+                    'living room luminosity [Lux]', 'living room magnitude accelerometer [m/s²]', 'living room temperature [°C]',
+                    'living room CO2 [ppm]', 'living room max sound pressure [dB]', 'hour'],
+        'transitions': ['kitchen humidity [%]', 'kitchen luminosity [Lux]', 'kitchen temperature [°C]', 'entrance humidity [%]', 
+                        'entrance luminosity [Lux]', 'entrance magnitude accelerometer [m/s²]', 
+                        'entrance magnitude gyroscope [°/s]', 'entrance temperature [°C]', 'living room luminosity [Lux]', 
+                        'living room temperature [°C]', 'living room air quality index', 'living room CO2 [ppm]', 
+                        'living room min sound pressure [dB]', 'hour'],
+        'routines' : ['entrance humidity [%]', 'entrance luminosity [Lux]', 'entrance temperature [°C]', 
+                      'living room humidity [%]', 'living room luminosity [Lux]', 'living room magnitude accelerometer [m/s²]', 
+                      'living room magnitude gyroscope [°/s]', 'living room temperature [°C]', 'living room air quality index', 
+                      'living room CO2 [ppm]', 'living room min sound pressure [dB]', 'hour'],
+        'food':  ['kitchen humidity [%]', 'kitchen luminosity [Lux]', 'kitchen magnitude accelerometer [m/s²]', 
+                  'kitchen magnitude gyroscope [°/s]', 'kitchen temperature [°C]', 'living room humidity [%]', 
+                  'living room luminosity [Lux]', 'living room magnitude accelerometer [m/s²]', 
+                  'living room magnitude gyroscope [°/s]', 'living room temperature [°C]', 'living room air quality index', 
+                  'living room CO2 [ppm]', 'living room min sound pressure [dB]', 'living room max sound pressure [dB]', 'hour']
+    }
+
+    if model not in column_sets:
+        raise ValueError(f'Cannot return columns, no such model as {model}.')
+    return column_sets[model]
+
+def drop_columns(df: pd.DataFrame, model: str) -> pd.DataFrame:
+    """
+    Keeps only the columns needed for 'model'.
+
+    Args:
+        df (pd.DataFrame): The input DataFrame containing the data of a single window to be classified.
+        model (str): The model type, e.g., 'single', 'transitions'. The remaining columns depend on it.
+    
+    Returns:
+        pd.DataFrame: The filtered DataFrame.
+    """
+    relevant_column_names = get_column_set(model)
+    columns_to_keep = [col for col in df.columns if col in relevant_column_names]
+    return df[columns_to_keep]
+
+def format_window_for_classification(df: pd.DataFrame, model_type: str) -> List[float]:
     """
     Flattens a DataFrame into a single Python list.
 
     Args:
-        df (pd.DataFrame): The input DataFrame containing the data of a single window to be classified.
+        df (pd.DataFrame): Data for one window.
+        model_type (str): One of 'single', 'transitions', 'routines', 'food'. Determines which columns to keep.
 
     Returns:
-        List[Any]: A flattened list of floats to be classified.
+        List[float]: A flattened list of floats to be classified.
 
     Notes:
         An EI model accepts data of a window as a continous list of comma separated values
@@ -44,12 +96,9 @@ def format_window_for_classification(df: pd.DataFrame) -> List[float]:
         - .tolist() turns it into a Python list
         - the elements are casted into floats
     """
-    if 'time' in df.columns: 
-        df = df.drop(columns=['time'])
-    if 'annotation' in df.columns: 
-        df = df.drop(columns=['annotation'])
+    df_relevant_columns = drop_columns(df, model_type)
 
-    flattened_features = df.values.ravel().tolist()
+    flattened_features = df_relevant_columns.values.ravel().tolist()
     features = [float(f) for f in flattened_features]
     return features
 
@@ -83,7 +132,7 @@ def validate_input(total_rows: int, window_size: int, overlap_size: int) -> bool
     return True
 
 def classify_window_by_window(df: pd.DataFrame, window_size: int, overlap_size: int, 
-    loaded_model: ImpulseRunner) -> Optional['ClassificationResults']:
+    loaded_model: ImpulseRunner, model_type: str) -> Optional['ClassificationResults']:
     """
     Segments the input DataFrame into overlapping windows, runs classification on each window,
     and records the ground truth, model predictions, and the worst-case classification time
@@ -94,6 +143,7 @@ def classify_window_by_window(df: pd.DataFrame, window_size: int, overlap_size: 
         window_size (int): Number of rows in each window.
         overlap_size (int): Number of rows that overlap between consecutive windows.
         loaded_model (ImpulseRunner): Pre-loaded Edge Impulse model runner used for inference.
+        model_type (str): One of 'single', 'transitions', 'routines', 'food'.
 
     Returns:
         Optional[dict]: Returns None if input validation fails. Otherwise, returns a dict with:
@@ -119,7 +169,7 @@ def classify_window_by_window(df: pd.DataFrame, window_size: int, overlap_size: 
         most_common_annotation = str(most_common_annotation)
 
         trace = TimeMemoryTracer()
-        formatted_window = format_window_for_classification(window)
+        formatted_window = format_window_for_classification(window, model_type)
         classification_result = classify_window(loaded_model, formatted_window)
         window_classification_time_ms, window_classification_memory_kb = trace.stop()
 
@@ -167,7 +217,26 @@ def visualize_confusion_matrix(output_dir_path: Path, classes: List[str], confus
 
     generate_confusion_matrix(conf_matrix_percentage, classes, output_dir_path)
 
-def process_files(window_size: int, window_overlap: int, model_file_path: Path, input_dir_path: Path, output_dir_path) -> None:
+def infer_model_type(model_file_name: str) -> str:
+    """
+    Infers which of the known model types is encoded in the file name.
+
+    Args:
+        model_file_name (str): e.g. '2025-05-05-single-v2.zip'
+
+    Returns:
+        str: One of 'single', 'transitions', 'routines', or 'food'.
+
+    Raises:
+        ValueError: If no known model type can be found in the name.
+    """
+    known_model_types = {'single', 'transitions', 'routines', 'food'}
+    for part in model_file_name.split('-'):
+        if part in known_model_types:
+            return part
+    raise ValueError(f'Could not infer model type from {model_file_name}')
+
+def process_files(window_size: int, window_overlap: int, model_file_path: Path, input_dir_path: Path, output_dir_path: Path) -> None:
     """
     Loads the specified Edge Impulse model, processes every CSV file in the input directory,
     and writes a combined report.
@@ -190,6 +259,7 @@ def process_files(window_size: int, window_overlap: int, model_file_path: Path, 
     complete_classification_results = ClassificationResults()
 
     loaded_model = load_model(model_file_path)
+    model_type = infer_model_type(model_file_path.name)
 
     counter = 1
     for file in files:
@@ -197,7 +267,8 @@ def process_files(window_size: int, window_overlap: int, model_file_path: Path, 
         print(f'Segmenting and classifying file {counter}/{n_files} {filename}...')
 
         episode_df = read_csv_to_pandas_dataframe(file)
-        episode_classification_results = classify_window_by_window(episode_df, window_size, window_overlap, loaded_model)
+        episode_classification_results = classify_window_by_window(episode_df, window_size, window_overlap, 
+                                                                   loaded_model, model_type)
         
         if episode_classification_results: # i.e. not skipped
             complete_classification_results.update(episode_classification_results)
