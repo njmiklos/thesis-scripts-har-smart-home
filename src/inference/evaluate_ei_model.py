@@ -60,7 +60,7 @@ def get_column_set(model: str) -> List[str]:
         raise ValueError(f'Cannot return columns, no such model as {model}.')
     return column_sets[model]
 
-def drop_columns(df: pd.DataFrame, model: str) -> pd.DataFrame:
+def select_columns(df: pd.DataFrame, model: str) -> pd.DataFrame:
     """
     Keeps only the columns needed for 'model'. Raises a ValueError if any required columns are missing.
 
@@ -100,7 +100,7 @@ def format_window_for_classification(df: pd.DataFrame, model_type: str) -> List[
         - .tolist() turns it into a Python list
         - the elements are casted into floats
     """
-    df_relevant_columns = drop_columns(df, model_type)
+    df_relevant_columns = select_columns(df, model_type)
 
     flattened_features = df_relevant_columns.values.ravel().tolist()
     features = [float(f) for f in flattened_features]
