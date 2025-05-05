@@ -2,7 +2,7 @@
 This code segments an annotated dataset into windows, classifies them, and summarizes the results. 
 The purpose is to test EI models locally.
 
-It is recommended to first segment the dataset into episodes. This ensures that less data is loaded into memory at once.
+The dataset should be segmented into episodes. This ensures that less data is loaded into memory at once.
 
 In my thesis, each window was processed by three specialized DL models. Each model predicted a class and its confidence. 
 The highest-confidence prediction was selected as the final output and saved for the window.
@@ -20,6 +20,7 @@ from utils.get_env import get_path_from_env
 from utils.handle_csv import read_csv_to_pandas_dataframe, get_all_csv_files_in_directory
 from inference.classify_with_ei_model import load_model, close_loaded_model, classify_window, get_top_prediction
 from inference.evaluation_utils import ClassificationResults, TimeMemoryTracer
+from data_processing.annotate_dataset import determine_annotation
 from data_analysis.visualize_ei_report import convert_matrix_values_to_percentages
 from data_analysis.visualize_data import generate_confusion_matrix
 
@@ -135,7 +136,7 @@ def validate_input(total_rows: int, window_size: int, overlap_size: int) -> bool
 
     return True
 
-def classify_window_by_window(df: pd.DataFrame, window_size: int, overlap_size: int, 
+def classify_window_by_window(df: pd.DataFrame, annotation: str, window_size: int, overlap_size: int, 
     loaded_model: ImpulseRunner, model_type: str) -> Optional['ClassificationResults']:
     """
     Segments the input DataFrame into overlapping windows, runs classification on each window,
@@ -144,6 +145,7 @@ def classify_window_by_window(df: pd.DataFrame, window_size: int, overlap_size: 
 
     Args:
         df (pd.DataFrame): Input DataFrame containing at least an 'annotation' column.
+        annotation (str): True annotation for the episode.
         window_size (int): Number of rows in each window.
         overlap_size (int): Number of rows that overlap between consecutive windows.
         loaded_model (ImpulseRunner): Pre-loaded Edge Impulse model runner used for inference.
@@ -169,9 +171,6 @@ def classify_window_by_window(df: pd.DataFrame, window_size: int, overlap_size: 
         end_position = start_position + window_size
         window = df.iloc[start_position : end_position]
 
-        most_common_annotation = df['annotation'].value_counts().idxmax()
-        most_common_annotation = str(most_common_annotation)
-
         trace = TimeMemoryTracer()
         formatted_window = format_window_for_classification(window, model_type)
         classification_result = classify_window(loaded_model, formatted_window)
@@ -180,7 +179,7 @@ def classify_window_by_window(df: pd.DataFrame, window_size: int, overlap_size: 
         prediction_class, _ = get_top_prediction(classification_result)
 
         window_results = ClassificationResults(
-            actual_annotations=[most_common_annotation],
+            actual_annotations=[annotation],
             predicted_annotations=[prediction_class],
             max_classification_time_ms=window_classification_time_ms,
             max_classification_memory_kb=window_classification_memory_kb,
@@ -240,7 +239,8 @@ def infer_model_type(model_file_name: str) -> str:
             return part
     raise ValueError(f'Could not infer model type from {model_file_name}')
 
-def process_files(window_size: int, window_overlap: int, model_file_path: Path, input_dir_path: Path, output_dir_path: Path) -> None:
+def process_files(window_size: int, window_overlap: int, model_file_path: Path, annotations_file_path: Path, 
+                  input_dir_path: Path, output_dir_path: Path) -> None:
     """
     Loads the specified Edge Impulse model, processes every CSV file in the input directory,
     and writes a combined report.
@@ -249,29 +249,35 @@ def process_files(window_size: int, window_overlap: int, model_file_path: Path, 
         window_size (int): Number of rows per sliding window.
         window_overlap (int): Number of rows to overlap between consecutive windows.
         model_file_path (Path): Filesystem path to the pre-trained Edge Impulse model.
+        annotations_file_path (Path): Path to the file containing true annotations.
         input_dir_path (Path): Directory containing the input CSV files to process.
         output_dir_path (Path): Directory where the final JSON report will be saved.
     
     Returns:
         None
     """
-    start_time_in_secs = time.perf_counter()
+    annotations_df = read_csv_to_pandas_dataframe(annotations_file_path)
+
+    loaded_model = load_model(model_file_path)
+    model_type = infer_model_type(model_file_path.name)
 
     files = get_all_csv_files_in_directory(input_dir_path)
     n_files = len(files)
 
     complete_classification_results = ClassificationResults()
-
-    loaded_model = load_model(model_file_path)
-    model_type = infer_model_type(model_file_path.name)
-
     counter = 1
+
+    start_time_in_secs = time.perf_counter()
     for file in files:
         filename = file.name
         print(f'Segmenting and classifying file {counter}/{n_files} {filename}...')
 
         episode_df = read_csv_to_pandas_dataframe(file)
-        episode_classification_results = classify_window_by_window(episode_df, window_size, window_overlap, 
+
+        last_timestamp = episode_df['time'].iloc[-1]
+        annotation = determine_annotation(annotations_df, last_timestamp)
+
+        episode_classification_results = classify_window_by_window(episode_df, annotation, window_size, window_overlap, 
                                                                    loaded_model, model_type)
         
         if episode_classification_results: # i.e. not skipped
@@ -291,15 +297,18 @@ def process_files(window_size: int, window_overlap: int, model_file_path: Path, 
 
 
 if __name__ == '__main__':
-    # Parameters to be set
+    # Parameters
     window_size = 75
     window_overlap = 37
 
-    # Paths
+    # Paths to adjust per device
     input_dir_path = get_path_from_env('INPUTS_PATH')
     output_dir_path = get_path_from_env('OUTPUTS_PATH')
-    model_file_name = get_path_from_env('MODEL_PATH')
-    output_dir_path.mkdir(parents=True, exist_ok=True)
-    model_file_path = input_dir_path / model_file_name
 
-    process_files(window_size, window_overlap, model_file_path, input_dir_path, output_dir_path)
+    # Paths to adjust per model
+    model_file_path = get_path_from_env('MODEL_PATH')
+    annotations_file_path = get_path_from_env('ANNOTATIONS_FILE_PATH')
+
+    output_dir_path.mkdir(parents=True, exist_ok=True)
+
+    process_files(window_size, window_overlap, model_file_path, annotations_file_path, input_dir_path, output_dir_path)
