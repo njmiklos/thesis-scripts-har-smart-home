@@ -4,8 +4,10 @@ The purpose is to test EI models locally.
 
 The dataset should be segmented into episodes. This ensures that less data is loaded into memory at once.
 
-This version tests one of four DL models (Single, Rooutines, Transitions, Food) at a time, 
-each on their unique testing sets.
+This version tests the Multi-Model Approach. Each window is processed by three specialized DL models
+at the same time. Each model returns a class and its confidence about the choice. The class with 
+the highest confidence is saved as the prediction for the window, and results from all windows
+determine the efficiency of the approach.
 """
 import pandas as pd
 import numpy as np
