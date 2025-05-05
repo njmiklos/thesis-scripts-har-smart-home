@@ -62,7 +62,7 @@ def get_column_set(model: str) -> List[str]:
 
 def drop_columns(df: pd.DataFrame, model: str) -> pd.DataFrame:
     """
-    Keeps only the columns needed for 'model'.
+    Keeps only the columns needed for 'model'. Raises a ValueError if any required columns are missing.
 
     Args:
         df (pd.DataFrame): The input DataFrame containing the data of a single window to be classified.
@@ -71,9 +71,13 @@ def drop_columns(df: pd.DataFrame, model: str) -> pd.DataFrame:
     Returns:
         pd.DataFrame: The filtered DataFrame.
     """
-    relevant_column_names = get_column_set(model)
-    columns_to_keep = [col for col in df.columns if col in relevant_column_names]
-    return df[columns_to_keep]
+    required_columns = list(get_column_set(model))
+
+    missing_columns = [col for col in required_columns if col not in df.columns]
+    if missing_columns:
+        raise ValueError(f"DataFrame is missing required columns for model '{model}': {missing_columns}")
+
+    return df[required_columns]
 
 def format_window_for_classification(df: pd.DataFrame, model_type: str) -> List[float]:
     """
