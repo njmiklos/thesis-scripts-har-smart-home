@@ -10,6 +10,7 @@ the highest confidence is saved as the prediction for the window, and results fr
 determine the efficiency of the approach.
 """
 import pandas as pd
+import numpy as np
 import time
 
 from typing import List, Optional
@@ -19,25 +20,50 @@ from utils.get_env import get_path_from_env
 from utils.handle_csv import read_csv_to_pandas_dataframe, get_all_csv_files_in_directory
 from inference.classify_with_ei_model import load_model, close_loaded_model, classify_window, get_top_prediction
 from inference.evaluation_utils import ClassificationResults, TimeMemoryTracer
-from inference.evaluate_ei_model import (format_window_for_classification, validate_input, save_to_json_file, 
-                                         visualize_confusion_matrix, infer_model_name)
+from inference.evaluate_ei_model import (validate_input, save_to_json_file, visualize_confusion_matrix, 
+                                         infer_model_name, get_column_set)
 from data_processing.annotate_dataset import determine_true_annotation
 
 
-def format_window_for_models(model_names: List[str], window: pd.DataFrame) ->  dict:
+def get_model_column_indices(loaded_models: dict, df: pd.DataFrame) -> dict:
     """
-    Flattens a DataFrame into a single Python list.
+    Computes the column indices for each model based on its expected input features.
 
     Args:
-        model_names (List[str]): One of 'single', 'transitions', 'routines', 'food'.
-        window (pd.DataFrame): Data for one window.
+        loaded_models (dict): A dictionary mapping model names (e.g., 'food', 'routines') 
+                              to loaded Edge Impulse model runners.
+        df (pd.DataFrame): The full input DataFrame containing all available columns for an episode.
 
     Returns:
-        (dict): A dictionary mapping model names to formatted windows.
+        dict: A dictionary mapping each model name to a list of column indices (integers) 
+              that correspond to the features required by that model. These indices can be 
+              used to efficiently extract the required columns from a NumPy array.
+    """
+    model_column_indices = dict()
+    for model_name in loaded_models.keys():
+        column_names = get_column_set(model_name)
+        indices = []
+        for col in column_names:
+            indices.append(df.columns.get_loc(col))
+        model_column_indices[model_name] = indices
+    return model_column_indices
+
+def flatten_window_for_models(model_column_indices: dict, window_values: np.ndarray) -> dict:
+    """
+    Flattens a single window of raw values into model-specific input vectors.
+
+    Args:
+        model_column_indices (dict): Mapping of model names to column indices to extract from window.
+        window_values (np.ndarray): The full window data as a NumPy array.
+
+    Returns:
+        dict: Mapping of model names to their respective flattened input feature lists.
     """
     formatted_windows = dict()
-    for name in model_names:
-        formatted_windows[name] = format_window_for_classification(window, name)
+    for model_name, indices in model_column_indices.items():
+        selected_values = window_values[:, indices]
+        flattened = selected_values.ravel().astype(float).tolist()
+        formatted_windows[model_name] = flattened
     return formatted_windows
 
 def classify_window_all_models(loaded_models: dict, windows: dict):
@@ -113,21 +139,24 @@ def classify_with_sliding_windows(df: pd.DataFrame, true_annotation: str, window
     if not input_valid:
         return None
     
+    model_column_indices = get_model_column_indices(loaded_models, df)
+
+    df_values = df.to_numpy()
+
     complete_results = ClassificationResults()
 
     start_position = 0
     while start_position + window_size <= total_rows:
         end_position = start_position + window_size
-        window = df.iloc[start_position : end_position]
+        window_values = df_values[start_position:end_position]
 
         resource_tracker = TimeMemoryTracer()
-
-        formatted_windows = format_window_for_models(loaded_models.keys(), window)
-
+        formatted_windows = flatten_window_for_models(model_column_indices, window_values)
         classification_results = classify_window_all_models(loaded_models, formatted_windows)
         window_classification_time_ms, window_classification_memory_kb = resource_tracker.stop()
 
         predicted_annotation = get_top_class_from_top_pair(classification_results)
+
         window_results = ClassificationResults(
             actual_annotations=[true_annotation],
             predicted_annotations=[predicted_annotation],
@@ -152,9 +181,9 @@ def load_models(model_file_paths: List[Path]) -> dict:
     """
     loaded_models = dict()
     for path in model_file_paths:
-        type = infer_model_name(path.name)
+        model_name = infer_model_name(path.name)
         runner = load_model(path)
-        loaded_models[type] = runner
+        loaded_models[model_name] = runner
 
     return loaded_models
 
@@ -196,10 +225,9 @@ def process_files(window_size: int, window_overlap: int, model_file_paths: List[
     n_files = len(files)
 
     complete_classification_results = ClassificationResults()
-    counter = 1
 
     start_time_in_secs = time.perf_counter()
-    for file in files:
+    for counter, file in enumerate(files, start=1):
         filename = file.name
         print(f'Segmenting and classifying file {counter}/{n_files} {filename}...')
 
@@ -214,8 +242,6 @@ def process_files(window_size: int, window_overlap: int, model_file_paths: List[
         
         if episode_classification_results: # i.e. not skipped
             complete_classification_results.update(episode_classification_results)
-
-        counter += 1
 
     close_loaded_models(loaded_models)
     print(f'Done.')
