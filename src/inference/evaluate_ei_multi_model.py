@@ -151,8 +151,8 @@ def classify_with_sliding_windows(df: pd.DataFrame, true_annotation: str, window
         window_values = df_values[start_position:end_position]
 
         resource_tracker = TimeMemoryTracer()
-        formatted_windows = flatten_window_for_models(model_column_indices, window_values)
-        classification_results = classify_window_all_models(loaded_models, formatted_windows)
+        flattened_windows = flatten_window_for_models(model_column_indices, window_values)
+        classification_results = classify_window_all_models(loaded_models, flattened_windows)
         window_classification_time_ms, window_classification_memory_kb = resource_tracker.stop()
 
         predicted_annotation = get_top_class_from_top_pair(classification_results)
