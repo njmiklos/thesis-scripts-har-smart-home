@@ -25,6 +25,23 @@ from data_analysis.visualize_ei_report import convert_matrix_values_to_percentag
 from data_analysis.visualize_data import generate_confusion_matrix
 
 
+def get_model_column_indices(model_name: str, df: pd.DataFrame) -> List[int]:
+    """
+    Returns the column indices needed for a specific model.
+
+    Args:
+        model_name (str): One of 'single', 'transitions', 'routines', 'food'.
+        df (pd.DataFrame): The full input DataFrame for the episode.
+
+    Returns:
+        List[int]: Indices of the columns used by the specified model.
+    """
+    column_names = get_column_set(model_name)
+    indices = []
+    for col in column_names:
+        indices.append(df.columns.get_loc(col))
+    return indices
+
 def get_column_set(model: str) -> List[str]:
     """
     Returns the list of columns expected by the specified model.
@@ -80,16 +97,16 @@ def select_columns(df: pd.DataFrame, model: str) -> pd.DataFrame:
 
     return df[required_columns]
 
-def format_window_for_classification(df: pd.DataFrame, model_type: str) -> List[float]:
+def flatten_window_for_model(window_values: np.ndarray, column_indices: List[int]) -> List[float]:
     """
-    Flattens a DataFrame into a single Python list.
+    Flattens a window's raw values to a model-compatible input list.
 
     Args:
-        df (pd.DataFrame): Data for one window.
-        model_type (str): One of 'single', 'transitions', 'routines', 'food'. Determines which columns to keep.
+        window_values (np.ndarray): 2D NumPy array representing the data window.
+        column_indices (List[int]): Column indices to include for the model.
 
     Returns:
-        List[float]: A flattened list of floats to be classified.
+        List[float]: Flattened list of floats for model input.
 
     Notes:
         An EI model accepts data of a window as a continous list of comma separated values
@@ -101,11 +118,8 @@ def format_window_for_classification(df: pd.DataFrame, model_type: str) -> List[
         - .tolist() turns it into a Python list
         - the elements are casted into floats
     """
-    df_relevant_columns = select_columns(df, model_type)
-
-    flattened_features = df_relevant_columns.values.ravel().tolist()
-    features = [float(f) for f in flattened_features]
-    return features
+    selected = window_values[:, column_indices]
+    return selected.ravel().astype(float).tolist()
 
 def validate_input(total_rows: int, window_size: int, overlap_size: int) -> bool:
     """
@@ -137,7 +151,7 @@ def validate_input(total_rows: int, window_size: int, overlap_size: int) -> bool
     return True
 
 def classify_with_sliding_windows(df: pd.DataFrame, annotation: str, window_size: int, overlap_size: int, 
-    loaded_model: ImpulseRunner, model_type: str) -> Optional['ClassificationResults']:
+    loaded_model: ImpulseRunner, model_name: str) -> Optional['ClassificationResults']:
     """
     Segments the input DataFrame into overlapping windows, runs classification on each window,
     and records the ground truth, model predictions, and the worst-case classification time
@@ -149,7 +163,7 @@ def classify_with_sliding_windows(df: pd.DataFrame, annotation: str, window_size
         window_size (int): Number of rows in each window.
         overlap_size (int): Number of rows that overlap between consecutive windows.
         loaded_model (ImpulseRunner): Pre-loaded Edge Impulse model runner used for inference.
-        model_type (str): One of 'single', 'transitions', 'routines', 'food'.
+        model_name (str): One of 'single', 'transitions', 'routines', 'food'.
 
     Returns:
         Optional[ClassificationResults]: Returns None if input validation fails. Otherwise, returns an object with:
@@ -163,24 +177,27 @@ def classify_with_sliding_windows(df: pd.DataFrame, annotation: str, window_size
     input_valid = validate_input(total_rows, window_size, overlap_size)
     if not input_valid:
         return None
-    
+
+    column_indices = get_model_column_indices(model_name, df)
+    df_values = df.to_numpy()
+
     complete_results = ClassificationResults()
 
     start_position = 0
     while start_position + window_size <= total_rows:
         end_position = start_position + window_size
-        window = df.iloc[start_position : end_position]
+        window_values = df_values[start_position:end_position]
 
         resource_tracker = TimeMemoryTracer()
-        formatted_window = format_window_for_classification(window, model_type)
-        classification_result = classify_window(loaded_model, formatted_window)
+        flattened_window = flatten_window_for_model(window_values, column_indices)
+        classification_result = classify_window(loaded_model, flattened_window)
         window_classification_time_ms, window_classification_memory_kb = resource_tracker.stop()
 
-        prediction_class, _ = get_top_prediction(classification_result)
+        predicted_annotation, _ = get_top_prediction(classification_result)
 
         window_results = ClassificationResults(
             actual_annotations=[annotation],
-            predicted_annotations=[prediction_class],
+            predicted_annotations=[predicted_annotation],
             max_classification_time_ms=window_classification_time_ms,
             max_classification_memory_kb=window_classification_memory_kb,
         )
