@@ -24,13 +24,29 @@ from inference.evaluate_ei_model import (format_window_for_classification, valid
 from data_processing.annotate_dataset import determine_annotation
 
 
-def classify_window_all_models(loaded_models: dict, window: List[float]):
+def formatt_window_for_models(model_names: List[str], window: pd.DataFrame) ->  dict:
+    """
+    Flattens a DataFrame into a single Python list.
+
+    Args:
+        model_names (List[str]): One of 'single', 'transitions', 'routines', 'food'.
+        window (pd.DataFrame): Data for one window.
+
+    Returns:
+        (dict): A dictionary mapping model names to formatted windows.
+    """
+    formatted_windows = dict()
+    for name in model_names:
+        formatted_windows[name] = format_window_for_classification(window, name)
+    return formatted_windows
+
+def classify_window_all_models(loaded_models: dict, windows: dict):
     """
     Runs classification for a single data window across multiple models.
 
     Args:
         loaded_models (dict): A dictionary mapping model names to loaded model runners.
-        window (List[float]): A formatted data window to classify.
+        window (dict): A dictionary mapping model names to formatted windows.
 
     Returns:
         dict: A dictionary mapping model names to their classification results.
@@ -40,7 +56,7 @@ def classify_window_all_models(loaded_models: dict, window: List[float]):
     
     results = dict()
     for name, runner in loaded_models.items():
-        results[name] = classify_window(runner, window)
+        results[name] = classify_window(runner, windows[name])
         
     return results
 
@@ -98,8 +114,10 @@ def classify_window_by_window(df: pd.DataFrame, annotation: str, window_size: in
         window = df.iloc[start_position : end_position]
 
         trace = TimeMemoryTracer()
-        formatted_window = format_window_for_classification(window, 'single')   # window same for all models
-        classification_results = classify_window_all_models(loaded_models, formatted_window)
+
+        formatted_windows = formatt_window_for_models(loaded_models.keys(), window)
+
+        classification_results = classify_window_all_models(loaded_models, formatted_windows)
         window_classification_time_ms, window_classification_memory_kb = trace.stop()
 
         predicted_annotation = get_top_class_from_top_pair(classification_results)
