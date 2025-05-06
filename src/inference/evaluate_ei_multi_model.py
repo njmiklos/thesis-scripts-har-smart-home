@@ -20,11 +20,11 @@ from utils.handle_csv import read_csv_to_pandas_dataframe, get_all_csv_files_in_
 from inference.classify_with_ei_model import load_model, close_loaded_model, classify_window, get_top_prediction
 from inference.evaluation_utils import ClassificationResults, TimeMemoryTracer
 from inference.evaluate_ei_model import (format_window_for_classification, validate_input, save_to_json_file, 
-                                         visualize_confusion_matrix, infer_model_type)
-from data_processing.annotate_dataset import determine_annotation
+                                         visualize_confusion_matrix, infer_model_name)
+from data_processing.annotate_dataset import determine_true_annotation
 
 
-def formatt_window_for_models(model_names: List[str], window: pd.DataFrame) ->  dict:
+def format_window_for_models(model_names: List[str], window: pd.DataFrame) ->  dict:
     """
     Flattens a DataFrame into a single Python list.
 
@@ -86,7 +86,7 @@ def get_top_class_from_top_pair(classification_results: dict) -> str:
         return max(top_predictions, key=lambda x: x[1])[0]
     return max(other_predictions, key=lambda x: x[1])[0]
 
-def classify_window_by_window(df: pd.DataFrame, annotation: str, window_size: int, overlap_size: int, 
+def classify_with_sliding_windows(df: pd.DataFrame, true_annotation: str, window_size: int, overlap_size: int, 
                                 loaded_models: dict) -> Optional['ClassificationResults']:
     """
     Segments the input DataFrame into overlapping windows, runs classification on each window,
@@ -95,13 +95,13 @@ def classify_window_by_window(df: pd.DataFrame, annotation: str, window_size: in
 
     Args:
         df (pd.DataFrame): Input DataFrame containing at least an 'annotation' column.
-        annotation (str): True annotation for the episode.
+        true_annotation (str): True annotation for the episode.
         window_size (int): Number of rows in each window.
         overlap_size (int): Number of rows that overlap between consecutive windows.
         loaded_models (dict): A dictionary with model name and pre-loaded Edge Impulse model runner pairs.
 
     Returns:
-        Optional[dict]: Returns None if input validation fails. Otherwise, returns a dict with:
+        Optional[ClassificationResults]: Returns None if input validation fails. Otherwise, returns an object with:
             - actual_annotations (List[str]): Ground truth annotation from the last row of each window.
             - predicted_annotations (List[str]): Model's predicted class for each window.
             - max_classification_time_ms (float): Maximum time in milliseconds taken by any single window classification.
@@ -120,16 +120,16 @@ def classify_window_by_window(df: pd.DataFrame, annotation: str, window_size: in
         end_position = start_position + window_size
         window = df.iloc[start_position : end_position]
 
-        trace = TimeMemoryTracer()
+        resource_tracker = TimeMemoryTracer()
 
-        formatted_windows = formatt_window_for_models(loaded_models.keys(), window)
+        formatted_windows = format_window_for_models(loaded_models.keys(), window)
 
         classification_results = classify_window_all_models(loaded_models, formatted_windows)
-        window_classification_time_ms, window_classification_memory_kb = trace.stop()
+        window_classification_time_ms, window_classification_memory_kb = resource_tracker.stop()
 
         predicted_annotation = get_top_class_from_top_pair(classification_results)
         window_results = ClassificationResults(
-            actual_annotations=[annotation],
+            actual_annotations=[true_annotation],
             predicted_annotations=[predicted_annotation],
             max_classification_time_ms=window_classification_time_ms,
             max_classification_memory_kb=window_classification_memory_kb,
@@ -152,7 +152,7 @@ def load_models(model_file_paths: List[Path]) -> dict:
     """
     loaded_models = dict()
     for path in model_file_paths:
-        type = infer_model_type(path.name)
+        type = infer_model_name(path.name)
         runner = load_model(path)
         loaded_models[type] = runner
 
@@ -206,16 +206,16 @@ def process_files(window_size: int, window_overlap: int, model_file_paths: List[
         episode_df = read_csv_to_pandas_dataframe(file)
 
         last_timestamp = episode_df['time'].iloc[-1]
-        annotation = determine_annotation(annotations_df, last_timestamp)
+        true_annotation = determine_true_annotation(annotations_df, last_timestamp)
 
-        episode_classification_results = classify_window_by_window(episode_df, annotation, 
-                                                                   window_size, window_overlap, 
-                                                                   loaded_models)
+        episode_classification_results = classify_with_sliding_windows(episode_df, true_annotation,
+                                                                       window_size, window_overlap,
+                                                                       loaded_models)
         
         if episode_classification_results: # i.e. not skipped
             complete_classification_results.update(episode_classification_results)
 
-        counter = counter + 1
+        counter += 1
 
     close_loaded_models(loaded_models)
     print(f'Done.')

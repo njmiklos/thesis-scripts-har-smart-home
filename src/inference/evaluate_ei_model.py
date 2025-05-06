@@ -20,7 +20,7 @@ from utils.get_env import get_path_from_env
 from utils.handle_csv import read_csv_to_pandas_dataframe, get_all_csv_files_in_directory
 from inference.classify_with_ei_model import load_model, close_loaded_model, classify_window, get_top_prediction
 from inference.evaluation_utils import ClassificationResults, TimeMemoryTracer
-from data_processing.annotate_dataset import determine_annotation
+from data_processing.annotate_dataset import determine_true_annotation
 from data_analysis.visualize_ei_report import convert_matrix_values_to_percentages
 from data_analysis.visualize_data import generate_confusion_matrix
 
@@ -136,7 +136,7 @@ def validate_input(total_rows: int, window_size: int, overlap_size: int) -> bool
 
     return True
 
-def classify_window_by_window(df: pd.DataFrame, annotation: str, window_size: int, overlap_size: int, 
+def classify_with_sliding_windows(df: pd.DataFrame, annotation: str, window_size: int, overlap_size: int, 
     loaded_model: ImpulseRunner, model_type: str) -> Optional['ClassificationResults']:
     """
     Segments the input DataFrame into overlapping windows, runs classification on each window,
@@ -152,7 +152,7 @@ def classify_window_by_window(df: pd.DataFrame, annotation: str, window_size: in
         model_type (str): One of 'single', 'transitions', 'routines', 'food'.
 
     Returns:
-        Optional[dict]: Returns None if input validation fails. Otherwise, returns a dict with:
+        Optional[ClassificationResults]: Returns None if input validation fails. Otherwise, returns an object with:
             - actual_annotations (List[str]): Ground truth annotation from the last row of each window.
             - predicted_annotations (List[str]): Model's predicted class for each window.
             - max_classification_time_ms (float): Maximum time in milliseconds taken by any single window classification.
@@ -171,10 +171,10 @@ def classify_window_by_window(df: pd.DataFrame, annotation: str, window_size: in
         end_position = start_position + window_size
         window = df.iloc[start_position : end_position]
 
-        trace = TimeMemoryTracer()
+        resource_tracker = TimeMemoryTracer()
         formatted_window = format_window_for_classification(window, model_type)
         classification_result = classify_window(loaded_model, formatted_window)
-        window_classification_time_ms, window_classification_memory_kb = trace.stop()
+        window_classification_time_ms, window_classification_memory_kb = resource_tracker.stop()
 
         prediction_class, _ = get_top_prediction(classification_result)
 
@@ -220,9 +220,9 @@ def visualize_confusion_matrix(output_dir_path: Path, classes: List[str], confus
 
     generate_confusion_matrix(conf_matrix_percentage, classes, output_dir_path)
 
-def infer_model_type(model_file_name: str) -> str:
+def infer_model_name(model_file_name: str) -> str:
     """
-    Infers which of the known model types is encoded in the file name.
+    Infers which of the known model name is encoded in the file name.
 
     Args:
         model_file_name (str): e.g. '2025-05-05-single-v2.zip'
@@ -231,11 +231,11 @@ def infer_model_type(model_file_name: str) -> str:
         str: One of 'single', 'transitions', 'routines', or 'food'.
 
     Raises:
-        ValueError: If no known model type can be found in the name.
+        ValueError: If no known model name can be found in the filename.
     """
-    known_model_types = {'single', 'transitions', 'routines', 'food'}
+    known_names = {'single', 'transitions', 'routines', 'food'}
     for part in model_file_name.split('-'):
-        if part in known_model_types:
+        if part in known_names:
             return part
     raise ValueError(f'Could not infer model type from {model_file_name}')
 
@@ -259,7 +259,7 @@ def process_files(window_size: int, window_overlap: int, model_file_path: Path, 
     annotations_df = read_csv_to_pandas_dataframe(annotations_file_path)
 
     loaded_model = load_model(model_file_path)
-    model_type = infer_model_type(model_file_path.name)
+    model_name = infer_model_name(model_file_path.name)
 
     files = get_all_csv_files_in_directory(input_dir_path)
     n_files = len(files)
@@ -275,15 +275,16 @@ def process_files(window_size: int, window_overlap: int, model_file_path: Path, 
         episode_df = read_csv_to_pandas_dataframe(file)
 
         last_timestamp = episode_df['time'].iloc[-1]
-        annotation = determine_annotation(annotations_df, last_timestamp)
+        true_annotation = determine_true_annotation(annotations_df, last_timestamp)
 
-        episode_classification_results = classify_window_by_window(episode_df, annotation, window_size, window_overlap, 
-                                                                   loaded_model, model_type)
+        episode_classification_results = classify_with_sliding_windows(episode_df, true_annotation, 
+                                                                       window_size, window_overlap,
+                                                                       loaded_model, model_name)
         
         if episode_classification_results: # i.e. not skipped
             complete_classification_results.update(episode_classification_results)
 
-        counter = counter + 1
+        counter += 1
 
     close_loaded_model(loaded_model)
     print(f'Done.')
