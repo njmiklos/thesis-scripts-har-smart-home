@@ -10,136 +10,61 @@ the highest confidence is saved as the prediction for the window, and results fr
 determine the efficiency of the approach.
 """
 import pandas as pd
-import numpy as np
 import time
-import json
 
 from typing import List, Optional
 from pathlib import Path
 
-from inference.edge_impulse_runner import ImpulseRunner
 from utils.get_env import get_path_from_env
 from utils.handle_csv import read_csv_to_pandas_dataframe, get_all_csv_files_in_directory
 from inference.classify_with_ei_model import load_model, close_loaded_model, classify_window, get_top_prediction
 from inference.evaluation_utils import ClassificationResults, TimeMemoryTracer
+from inference.evaluate_ei_model import (format_window_for_classification, validate_input, save_to_json_file, 
+                                         visualize_confusion_matrix, infer_model_type)
 from data_processing.annotate_dataset import determine_annotation
-from data_analysis.visualize_ei_report import convert_matrix_values_to_percentages
-from data_analysis.visualize_data import generate_confusion_matrix
 
 
-def get_column_set(model: str) -> List[str]:
+def classify_window_all_models(loaded_models: dict, window: List[float]):
     """
-    Returns the list of columns expected by the specified model.
+    Runs classification for a single data window across multiple models.
 
     Args:
-        model (str): One of 'single', 'transitions', 'routines', 'food'.
-    
+        loaded_models (dict): A dictionary mapping model names to loaded model runners.
+        window (List[float]): A formatted data window to classify.
+
     Returns:
-        List[str]: The expected columns for that model.
+        dict: A dictionary mapping model names to their classification results.
     """
-    column_sets = {
-        'single' : ['kitchen humidity [%]', 'kitchen luminosity [Lux]', 'kitchen magnitude accelerometer [m/s²]', 
-                    'kitchen temperature [°C]', 'entrance humidity [%]', 'entrance luminosity [Lux]', 
-                    'entrance magnitude accelerometer [m/s²]', 'entrance temperature [°C]', 'living room humidity [%]', 
-                    'living room luminosity [Lux]', 'living room magnitude accelerometer [m/s²]', 'living room temperature [°C]',
-                    'living room CO2 [ppm]', 'living room max sound pressure [dB]', 'hour'],
-        'transitions': ['kitchen humidity [%]', 'kitchen luminosity [Lux]', 'kitchen temperature [°C]', 'entrance humidity [%]', 
-                        'entrance luminosity [Lux]', 'entrance magnitude accelerometer [m/s²]', 
-                        'entrance magnitude gyroscope [°/s]', 'entrance temperature [°C]', 'living room luminosity [Lux]', 
-                        'living room temperature [°C]', 'living room air quality index', 'living room CO2 [ppm]', 
-                        'living room min sound pressure [dB]', 'hour'],
-        'routines' : ['entrance humidity [%]', 'entrance luminosity [Lux]', 'entrance temperature [°C]', 
-                      'living room humidity [%]', 'living room luminosity [Lux]', 'living room magnitude accelerometer [m/s²]', 
-                      'living room magnitude gyroscope [°/s]', 'living room temperature [°C]', 'living room air quality index', 
-                      'living room CO2 [ppm]', 'living room min sound pressure [dB]', 'hour'],
-        'food':  ['kitchen humidity [%]', 'kitchen luminosity [Lux]', 'kitchen magnitude accelerometer [m/s²]', 
-                  'kitchen magnitude gyroscope [°/s]', 'kitchen temperature [°C]', 'living room humidity [%]', 
-                  'living room luminosity [Lux]', 'living room magnitude accelerometer [m/s²]', 
-                  'living room magnitude gyroscope [°/s]', 'living room temperature [°C]', 'living room air quality index', 
-                  'living room CO2 [ppm]', 'living room min sound pressure [dB]', 'living room max sound pressure [dB]', 'hour']
-    }
+    if loaded_models is None:
+        raise ValueError('Empty model list.')
+    
+    results = dict()
+    for name, runner in loaded_models.items():
+        results[name] = classify_window(runner, window)
+        
+    return results
 
-    if model not in column_sets:
-        raise ValueError(f'Cannot return columns, no such model as {model}.')
-    return column_sets[model]
-
-def select_columns(df: pd.DataFrame, model: str) -> pd.DataFrame:
+def get_top_class_from_top_pair(classification_results: dict) -> str:
     """
-    Keeps only the columns needed for 'model'. Raises a ValueError if any required columns are missing.
+    Determines the top predicted class from a set of classification results,
+    based on the highest probability among all model outputs.
 
     Args:
-        df (pd.DataFrame): The input DataFrame containing the data of a single window to be classified.
-        model (str): The model type, e.g., 'single', 'transitions'. The remaining columns depend on it.
-    
-    Returns:
-        pd.DataFrame: The filtered DataFrame.
-    """
-    required_columns = list(get_column_set(model))
-
-    missing_columns = [col for col in required_columns if col not in df.columns]
-    if missing_columns:
-        raise ValueError(f"DataFrame is missing required columns for model '{model}': {missing_columns}")
-
-    return df[required_columns]
-
-def format_window_for_classification(df: pd.DataFrame, model_type: str) -> List[float]:
-    """
-    Flattens a DataFrame into a single Python list.
-
-    Args:
-        df (pd.DataFrame): Data for one window.
-        model_type (str): One of 'single', 'transitions', 'routines', 'food'. Determines which columns to keep.
+        classification_results (dict): A dictionary mapping model names to classification outputs.
 
     Returns:
-        List[float]: A flattened list of floats to be classified.
-
-    Notes:
-        An EI model accepts data of a window as a continous list of comma separated values
-        (i.e., every rows of values ends with a comma and the next row starts in the same line).
-
-        In this code:
-        - .values gives a 2D NumPy array
-        - .ravel() flattens it
-        - .tolist() turns it into a Python list
-        - the elements are casted into floats
+        str: The class label with the highest associated probability.
     """
-    df_relevant_columns = select_columns(df, model_type)
+    top_class_probability_pairs = dict()
+    for model_name, result in classification_results.items():
+        top_class_probability_pairs[model_name] = get_top_prediction(result)
 
-    flattened_features = df_relevant_columns.values.ravel().tolist()
-    features = [float(f) for f in flattened_features]
-    return features
-
-def validate_input(total_rows: int, window_size: int, overlap_size: int) -> bool:
-    """
-    Validates input against each other.
-
-    Args:
-        total_rows (int): The number of rows in the dataset.
-        window_size (int): The number of rows in each segmented window.
-        overlap_size (int): The number of overlapping rows between consecutive windows.
-
-    Returns:
-        bool: Returns True if the input values are valid, throws a ValueError otherwise.
-    """
-    if total_rows == 0:
-        raise ValueError('The input DataFrame is empty. There is no data to segment.')
-    
-    if window_size > total_rows:    # Window to be skipped
-        return False
-    
-    if window_size < 1:
-        raise ValueError(f'Invalid window size: {window_size}. A segment must contain at least one row.')
-    
-    if overlap_size < 0:
-        raise ValueError(f'Invalid overlap size: {overlap_size}. Overlap must be 0 or greater.')
-
-    if overlap_size >= window_size:
-        raise ValueError(f'Invalid overlap size: {overlap_size}. The overlap must be smaller than the window size ({window_size}).')
-
-    return True
+    top_pair = max(top_class_probability_pairs.items(), key=lambda item: item[1][1])
+    top_class = top_pair[1][0]
+    return top_class
 
 def classify_window_by_window(df: pd.DataFrame, annotation: str, window_size: int, overlap_size: int, 
-    loaded_model: ImpulseRunner, model_type: str) -> Optional['ClassificationResults']:
+                                loaded_models: dict) -> Optional['ClassificationResults']:
     """
     Segments the input DataFrame into overlapping windows, runs classification on each window,
     and records the ground truth, model predictions, and the worst-case classification time
@@ -150,8 +75,7 @@ def classify_window_by_window(df: pd.DataFrame, annotation: str, window_size: in
         annotation (str): True annotation for the episode.
         window_size (int): Number of rows in each window.
         overlap_size (int): Number of rows that overlap between consecutive windows.
-        loaded_model (ImpulseRunner): Pre-loaded Edge Impulse model runner used for inference.
-        model_type (str): One of 'single', 'transitions', 'routines', 'food'.
+        loaded_models (dict): A dictionary with model name and pre-loaded Edge Impulse model runner pairs.
 
     Returns:
         Optional[dict]: Returns None if input validation fails. Otherwise, returns a dict with:
@@ -174,15 +98,14 @@ def classify_window_by_window(df: pd.DataFrame, annotation: str, window_size: in
         window = df.iloc[start_position : end_position]
 
         trace = TimeMemoryTracer()
-        formatted_window = format_window_for_classification(window, model_type)
-        classification_result = classify_window(loaded_model, formatted_window)
+        formatted_window = format_window_for_classification(window, 'single')   # window same for all models
+        classification_results = classify_window_all_models(loaded_models, formatted_window)
         window_classification_time_ms, window_classification_memory_kb = trace.stop()
 
-        prediction_class, _ = get_top_prediction(classification_result)
-
+        predicted_annotation = get_top_class_from_top_pair(classification_results)
         window_results = ClassificationResults(
             actual_annotations=[annotation],
-            predicted_annotations=[prediction_class],
+            predicted_annotations=[predicted_annotation],
             max_classification_time_ms=window_classification_time_ms,
             max_classification_memory_kb=window_classification_memory_kb,
         )
@@ -192,56 +115,38 @@ def classify_window_by_window(df: pd.DataFrame, annotation: str, window_size: in
 
     return complete_results
 
-def save_to_json_file(output_dir_path: Path, dictionary: dict, output_file_name: str = 'classification_report.json'):
+def load_models(model_file_paths: List[Path]) -> dict:
     """
-    Saves the given dictionary to a JSON file.
+    Loads multiple Edge Impulse models from the given file paths.
 
     Args:
-        output_dir_path (Path): Path to the directory where report files are stored.
-        dictionary (dict): The dictionary to be saved.
-        output_file_name (Optional[str]): Filename for the report, defaults to 'classification_report.json'.
-    """
-    output_path = output_dir_path / output_file_name
-    output_dir_path.mkdir(parents=True, exist_ok=True)
-
-    with open(output_path, 'w') as f:
-        json.dump(dictionary, f, indent=4)
-    
-    print(f'Saved {output_path}.')
-
-def visualize_confusion_matrix(output_dir_path: Path, classes: List[str], confusion_matrix: List[List[int]]) -> None:
-    """
-    Generate a confusion matrix from JSON data and save it as an image.
-
-    Args:
-        classes (List[str]): A sorted list of unique true and false annotations.
-        confusion_matrix (List[List[int]]): Confusion matrix between true and predicted labels.
-    """
-    confusion_matrix_array = np.array(confusion_matrix)
-    conf_matrix_percentage = convert_matrix_values_to_percentages(confusion_matrix_array)
-
-    generate_confusion_matrix(conf_matrix_percentage, classes, output_dir_path)
-
-def infer_model_type(model_file_name: str) -> str:
-    """
-    Infers which of the known model types is encoded in the file name.
-
-    Args:
-        model_file_name (str): e.g. '2025-05-05-single-v2.zip'
+        model_file_paths (List[Path]): Filesystem paths to the pre-trained Edge Impulse models.
 
     Returns:
-        str: One of 'single', 'transitions', 'routines', or 'food'.
-
-    Raises:
-        ValueError: If no known model type can be found in the name.
+        dict: A dictionary mapping inferred model types (e.g., 'food', 'routines') to their loaded model runners.
     """
-    known_model_types = {'single', 'transitions', 'routines', 'food'}
-    for part in model_file_name.split('-'):
-        if part in known_model_types:
-            return part
-    raise ValueError(f'Could not infer model type from {model_file_name}')
+    loaded_models = dict()
+    for path in model_file_paths:
+        type = infer_model_type(path.name)
+        runner = load_model(path)
+        loaded_models[type] = runner
 
-def process_files(window_size: int, window_overlap: int, model_file_path: Path, annotations_file_path: Path, 
+    return loaded_models
+
+def close_loaded_models(models: dict) -> None:
+    """
+    Closes and cleans up all loaded Edge Impulse models to free system resources.
+
+    Args:
+        models (dict): A dictionary mapping model names to loaded model runners.
+
+    Returns:
+        None
+    """
+    for model in models.values():
+        close_loaded_model(model)
+
+def process_files(window_size: int, window_overlap: int, model_file_paths: List[Path], annotations_file_path: Path, 
                   input_dir_path: Path, output_dir_path: Path) -> None:
     """
     Loads the specified Edge Impulse model, processes every CSV file in the input directory,
@@ -250,7 +155,7 @@ def process_files(window_size: int, window_overlap: int, model_file_path: Path, 
     Args:
         window_size (int): Number of rows per sliding window.
         window_overlap (int): Number of rows to overlap between consecutive windows.
-        model_file_path (Path): Filesystem path to the pre-trained Edge Impulse model.
+        model_file_paths (List[Path]): Filesystem paths to the pre-trained Edge Impulse models.
         annotations_file_path (Path): Path to the file containing true annotations.
         input_dir_path (Path): Directory containing the input CSV files to process.
         output_dir_path (Path): Directory where the final JSON report will be saved.
@@ -260,8 +165,7 @@ def process_files(window_size: int, window_overlap: int, model_file_path: Path, 
     """
     annotations_df = read_csv_to_pandas_dataframe(annotations_file_path)
 
-    loaded_model = load_model(model_file_path)
-    model_type = infer_model_type(model_file_path.name)
+    loaded_models = load_models(model_file_paths)
 
     files = get_all_csv_files_in_directory(input_dir_path)
     n_files = len(files)
@@ -279,15 +183,16 @@ def process_files(window_size: int, window_overlap: int, model_file_path: Path, 
         last_timestamp = episode_df['time'].iloc[-1]
         annotation = determine_annotation(annotations_df, last_timestamp)
 
-        episode_classification_results = classify_window_by_window(episode_df, annotation, window_size, window_overlap, 
-                                                                   loaded_model, model_type)
+        episode_classification_results = classify_window_by_window(episode_df, annotation, 
+                                                                   window_size, window_overlap, 
+                                                                   loaded_models)
         
         if episode_classification_results: # i.e. not skipped
             complete_classification_results.update(episode_classification_results)
 
         counter = counter + 1
 
-    close_loaded_model(loaded_model)
+    close_loaded_models(loaded_models)
     print(f'Done.')
 
     end_time_in_secs = time.perf_counter()
@@ -307,10 +212,12 @@ if __name__ == '__main__':
     input_dir_path = get_path_from_env('INPUTS_PATH')
     output_dir_path = get_path_from_env('OUTPUTS_PATH')
 
-    # Paths to adjust per model
-    model_file_path = get_path_from_env('MODEL_PATH')
+    model_file_paths = [get_path_from_env('MODEL_PATH_1'), 
+                        get_path_from_env('MODEL_PATH_2'), 
+                        get_path_from_env('MODEL_PATH_3'),]
+    
     annotations_file_path = get_path_from_env('ANNOTATIONS_FILE_PATH')
 
     output_dir_path.mkdir(parents=True, exist_ok=True)
 
-    process_files(window_size, window_overlap, model_file_path, annotations_file_path, input_dir_path, output_dir_path)
+    process_files(window_size, window_overlap, model_file_paths, annotations_file_path, input_dir_path, output_dir_path)
