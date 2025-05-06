@@ -62,22 +62,29 @@ def classify_window_all_models(loaded_models: dict, windows: dict):
 
 def get_top_class_from_top_pair(classification_results: dict) -> str:
     """
-    Determines the top predicted class from a set of classification results,
-    based on the highest probability among all model outputs.
+    Returns the highest-confidence class prediction from classification results,
+    preferring any class but 'other'. If no such prediction exists, falls back to the most confident 
+    prediction of the 'other' class.
 
     Args:
         classification_results (dict): A dictionary mapping model names to classification outputs.
 
     Returns:
-        str: The class label with the highest associated probability.
+        str: The class label with the highest associated probability, preferring labels other than "other".
     """
-    top_class_probability_pairs = dict()
-    for model_name, result in classification_results.items():
-        top_class_probability_pairs[model_name] = get_top_prediction(result)
+    top_predictions = []
+    other_predictions = []
 
-    top_pair = max(top_class_probability_pairs.items(), key=lambda item: item[1][1])
-    top_class = top_pair[1][0]
-    return top_class
+    for result in classification_results.values():
+        predicted_class, probability = get_top_prediction(result)
+        if predicted_class == 'other':
+            other_predictions.append((predicted_class, probability))
+        else:
+            top_predictions.append((predicted_class, probability))
+
+    if top_predictions:
+        return max(top_predictions, key=lambda x: x[1])[0]
+    return max(other_predictions, key=lambda x: x[1])[0]
 
 def classify_window_by_window(df: pd.DataFrame, annotation: str, window_size: int, overlap_size: int, 
                                 loaded_models: dict) -> Optional['ClassificationResults']:
