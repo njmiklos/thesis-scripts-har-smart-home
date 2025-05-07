@@ -282,10 +282,9 @@ def process_files(window_size: int, window_overlap: int, model_file_path: Path, 
     n_files = len(files)
 
     complete_classification_results = ClassificationResults()
-    counter = 1
 
     start_time_in_secs = time.perf_counter()
-    for file in files:
+    for counter, file in enumerate(files, start=1):
         filename = file.name
         print(f'Segmenting and classifying file {counter}/{n_files} {filename}...')
 
@@ -300,8 +299,6 @@ def process_files(window_size: int, window_overlap: int, model_file_path: Path, 
         
         if episode_classification_results: # i.e. not skipped
             complete_classification_results.update(episode_classification_results)
-
-        counter += 1
 
     close_loaded_model(loaded_model)
     print(f'Done.')
