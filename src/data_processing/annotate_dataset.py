@@ -5,7 +5,7 @@ from utils.get_env import get_path_from_env
 from utils.handle_csv import read_csv_to_pandas_dataframe, save_pandas_dataframe_to_csv, get_all_csv_files_in_directory
 
 
-def determine_annotation(annotations: pd.DataFrame, time: int) -> str:
+def determine_true_annotation(annotations: pd.DataFrame, time: int) -> str:
     """
     Returns the annotation for the given timestamp based on the annotation intervals.
 
@@ -37,7 +37,7 @@ def insert_annotations(df: pd.DataFrame, annotations: pd.DataFrame) -> pd.DataFr
 
     for _, row in df.iterrows():
         time = row['time']
-        annotation = determine_annotation(annotations, time)
+        annotation = determine_true_annotation(annotations, time)
         annotations_list.append(annotation)
 
     df['annotation'] = annotations_list
