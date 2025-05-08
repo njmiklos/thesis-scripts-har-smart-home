@@ -74,6 +74,7 @@ def get_time(df: pd.DataFrame) -> str:
     Returns:
         str: Time in HH:MM format.
     """
+    df = df.copy()
     df['time'] = convert_timestamps_from_miliseconds_to_localized_datetime_srs(df['time'])
     first_timestamp = df['time'].iloc[0]
     time_str = first_timestamp.strftime('%H:%M')
