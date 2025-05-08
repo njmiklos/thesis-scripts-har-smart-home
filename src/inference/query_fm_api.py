@@ -14,8 +14,8 @@ def get_api_config(model: str = 'meta-llama-3.1-8b-instruct') -> Dict[str, str]:
 
     Args:
         model (str, optional): The model to use for chat completions. Defaults to 'meta-llama-3.1-8b-instruct'.
-            Other options (08.04.2025): 'internvl2.5-8b', 'c' (DeepSeek R1), 'deepseek-r1-distill-llama-70b',
-            'llama-3.3-70b-instruct'.
+            Other options (08.05.2025): 'internvl2.5-8b', 'deepseek-r1-distill-llama-70b', 'deepseek-r1',
+            'llama-3.3-70b-instruct', 'llama-4-scout-17b-16e-instruct', 'gemma-3-27b-it'.
 
     Returns:
         Dict[str, str]: A dictionary containing API key, base URL, and model name.
