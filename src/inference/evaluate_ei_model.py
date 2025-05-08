@@ -121,7 +121,7 @@ def flatten_window_for_model(window_values: np.ndarray, column_indices: List[int
     selected = window_values[:, column_indices]
     return selected.ravel().astype(float).tolist()
 
-def validate_input(total_rows: int, window_size: int, overlap_size: int) -> bool:
+def validate_window_size_and_overlap(total_rows: int, window_size: int, overlap_size: int) -> bool:
     """
     Validates input against each other.
 
@@ -174,7 +174,7 @@ def classify_with_sliding_windows(df: pd.DataFrame, annotation: str, window_size
     """
     total_rows = len(df)
 
-    input_valid = validate_input(total_rows, window_size, overlap_size)
+    input_valid = validate_window_size_and_overlap(total_rows, window_size, overlap_size)
     if not input_valid:
         return None
 

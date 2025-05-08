@@ -11,7 +11,7 @@ from pathlib import Path
 
 from utils.get_env import get_path_from_env
 from utils.handle_csv import read_csv_to_pandas_dataframe, get_all_csv_files_in_directory
-from inference.evaluate_ei_model import validate_input
+from inference.evaluate_ei_model import validate_window_size_and_overlap
 
 
 def count_windows(df: pd.DataFrame, window_size: int, window_overlap: int) -> int:
@@ -27,7 +27,7 @@ def count_windows(df: pd.DataFrame, window_size: int, window_overlap: int) -> in
         int: The total number of complete windows that can be extracted.
     """
     total_rows = len(df)
-    input_valid = validate_input(total_rows, window_size, window_overlap)
+    input_valid = validate_window_size_and_overlap(total_rows, window_size, window_overlap)
     if not input_valid:
         return 0  # Window shorter than the selected window size
 
