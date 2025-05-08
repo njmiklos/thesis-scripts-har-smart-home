@@ -120,7 +120,7 @@ def classify_with_sliding_windows(df: pd.DataFrame, true_annotation: str, window
     and memory usage.
 
     Args:
-        df (pd.DataFrame): Input DataFrame containing at least an 'annotation' column.
+        df (pd.DataFrame): Input DataFrame with an epipsode data to segment.
         true_annotation (str): True annotation for the episode.
         window_size (int): Number of rows in each window.
         overlap_size (int): Number of rows that overlap between consecutive windows.
