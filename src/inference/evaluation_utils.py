@@ -18,7 +18,7 @@ class ClassificationResults:
         max_classification_time_ms: float = 0.0, max_classification_memory_kb: float = 0.0) -> None:
         if max_classification_time_ms < 0:
             raise ValueError(f'Time must be larger than 0, got {max_classification_time_ms} ms')
-        if max_classification_time_ms < 0 or max_classification_memory_kb < 0:
+        if max_classification_memory_kb < 0:
             raise ValueError(f'Memory must be larger than 0, got {max_classification_memory_kb} kb.')
 
         self.actual_annotations = actual_annotations if actual_annotations is not None else []
