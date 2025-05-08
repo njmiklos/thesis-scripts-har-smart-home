@@ -66,19 +66,20 @@ def convert_Window_list_to_dict_list(windows: List['Window']) -> List[dict]:
     """
     return [window.to_dictionary() for window in windows]
 
-def process_files(window_size: int, window_overlap: int, model_file_path: Path, annotations_file_path: Path, 
+def process_files(window_size: int, window_overlap: int, model_name: Path, annotations_file_path: Path, 
                   input_dir_path: Path, output_dir_path: Path) -> None:
     """
-    Loads the specified Edge Impulse model, processes every CSV file in the input directory,
-    and writes a combined report.
+    Processes every CSV file in the input directory, and writes a combined result to JSON.
 
     Args:
         window_size (int): Number of rows per sliding window.
         window_overlap (int): Number of rows to overlap between consecutive windows.
-        model_file_path (Path): Filesystem path to the pre-trained Edge Impulse model.
+        model_name (str): The model to use for chat completions. Defaults to 'meta-llama-3.1-8b-instruct'.
+            Other options (08.04.2025): 'internvl2.5-8b', 'c' (DeepSeek R1), 'deepseek-r1-distill-llama-70b',
+            'llama-3.3-70b-instruct'.
         annotations_file_path (Path): Path to the file containing true annotations.
         input_dir_path (Path): Directory containing the input CSV files to process.
-        output_dir_path (Path): Directory where the final JSON report will be saved.
+        output_dir_path (Path): Directory where the final JSON data will be saved.
     
     Returns:
         None
@@ -92,19 +93,17 @@ def process_files(window_size: int, window_overlap: int, model_file_path: Path, 
 
     for counter, file in enumerate(files, start=1):
         filename = file.name
-        print(f'Segmenting and classifying file {counter}/{n_files} {filename}...')
+        print(f'Segmenting and formatting {counter}/{n_files} {filename}...')
 
         episode_df = read_csv_to_pandas_dataframe(file)
 
         last_timestamp = episode_df['time'].iloc[-1]
         true_annotation = determine_true_annotation(annotations_df, last_timestamp)
 
-        episode_classification_results = classify_with_sliding_windows(episode_df, true_annotation, 
-                                                                       window_size, window_overlap,
-                                                                       loaded_model, model_name)
+        episode_windows = format_with_sliding_windows(episode_df, true_annotation, window_size, 
+                                                      window_overlap, model_name)
         
-        if episode_classification_results: # i.e. not skipped
-            windows.update(episode_classification_results)
+        windows.append(episode_windows)
 
     print(f'Done.')
 
