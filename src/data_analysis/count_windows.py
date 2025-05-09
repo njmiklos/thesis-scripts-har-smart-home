@@ -11,7 +11,7 @@ from pathlib import Path
 
 from utils.get_env import get_path_from_env
 from utils.file_handler import read_csv_to_dataframe, get_all_csv_files_in_directory
-from inference.evaluate_ei_model import validate_window_size_and_overlap
+from inference.evaluate.ei_model import validate_window_size_and_overlap
 
 
 def count_windows(df: pd.DataFrame, window_size: int, window_overlap: int) -> int:

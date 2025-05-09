@@ -13,8 +13,8 @@ from utils.file_handler import read_csv_to_dataframe, get_all_csv_files_in_direc
 from data_processing.annotate import determine_true_annotation
 from data_processing.compress import generate_summary
 from data_processing.filter import validate_and_select_columns
-from inference.evaluation_utils import TimeMemoryTracer
-from inference.evaluate_ei_model import validate_window_size_and_overlap, save_to_json_file
+from inference.evaluate.utils import TimeMemoryTracer
+from inference.evaluate.ei_model import validate_window_size_and_overlap, save_to_json_file
 
 
 class Window():

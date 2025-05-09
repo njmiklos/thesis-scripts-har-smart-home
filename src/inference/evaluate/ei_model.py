@@ -18,7 +18,7 @@ from inference.edge_impulse_runner import ImpulseRunner
 from utils.get_env import get_path_from_env
 from utils.file_handler import read_csv_to_dataframe, get_all_csv_files_in_directory, save_to_json_file
 from inference.classify_with_ei_model import load_model, close_loaded_model, classify_window, get_top_prediction
-from inference.evaluation_utils import ClassificationResults, TimeMemoryTracer
+from inference.evaluate.utils import ClassificationResults, TimeMemoryTracer
 from data_processing.annotate import determine_true_annotation
 from data_analysis.visualize.ei_report import convert_matrix_values_to_percentages
 from data_analysis.visualize.utils import generate_confusion_matrix
