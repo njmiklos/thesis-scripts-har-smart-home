@@ -94,7 +94,7 @@ def format_with_sliding_windows(episode_df: pd.DataFrame, annotation: str, windo
     start_position = 0
     while start_position + window_size <= total_rows:
         end_position = start_position + window_size
-        window_df = episode_df[start_position:end_position]
+        window_df = episode_df.iloc[start_position : end_position]
 
         resource_tracker = TimeMemoryTracer()
         formatted_window_data = format_window(window_df)
@@ -106,6 +106,41 @@ def format_with_sliding_windows(episode_df: pd.DataFrame, annotation: str, windo
         start_position += (window_size - window_overlap)
 
     return windows
+
+def save_windows(output_dir_path: Path, windows: List['Window'], windows_per_file: int) -> None:
+    """
+    Saves Windows to JSON. If windows_per_file > 0, writes that many
+    windows per file. Otherwise, writes all windows to a single file.
+
+    Args:
+        output_dir_path (Path): Directory where the final JSON data will be saved.
+        windows (List['Window']): A list of Window objects.
+        windows_per_file (int): Number of windows to be saved per file. If 0 is given,
+            all windows are saved to the same file.
+
+    Returns:
+        None
+    """
+    if windows_per_file < 0:
+        raise ValueError(f'Window number must be ≥ 0, got {windows_per_file}.')
+    
+    total_windows = len(windows)
+    file_counter = 0
+
+    if windows_per_file > 0:
+        for start_pos in range(0, total_windows, windows_per_file):
+            file_counter += 1
+            end_pos = start_pos + windows_per_file
+            chunk = windows[start_pos : end_pos]
+            chunk_dicts = convert_window_list_to_dict_list(chunk)
+            filename = f'compressed_windows_{file_counter}.json'
+            save_to_json_file(output_dir_path, chunk_dicts, filename)
+    else:
+        file_counter = 1
+        dicts = convert_window_list_to_dict_list(windows)
+        save_to_json_file(output_dir_path, dicts, f'compressed_windows.json')
+    
+    print(f'Saved {total_windows} window(s) to {file_counter} file(s).')
 
 def convert_window_list_to_dict_list(windows: List['Window']) -> List[dict]:
     """
@@ -120,7 +155,7 @@ def convert_window_list_to_dict_list(windows: List['Window']) -> List[dict]:
     return [window.to_dictionary() for window in windows]
 
 def process_files(window_size: int, window_overlap: int, annotations_file_path: Path, 
-                  input_dir_path: Path, output_dir_path: Path) -> None:
+                  input_dir_path: Path, output_dir_path: Path, windows_per_file: int = 0) -> None:
     """
     Processes every CSV file in the input directory, and writes a combined result to JSON.
 
@@ -130,6 +165,8 @@ def process_files(window_size: int, window_overlap: int, annotations_file_path: 
         annotations_file_path (Path): Path to the file containing true annotations.
         input_dir_path (Path): Directory containing the input CSV files to process.
         output_dir_path (Path): Directory where the final JSON data will be saved.
+        windows_per_file (int): Number of windows to be saved per file. If 0 is given,
+            all windows are saved to the same file.
     
     Returns:
         None
@@ -160,14 +197,14 @@ def process_files(window_size: int, window_overlap: int, annotations_file_path: 
 
     print(f'Done.')
 
-    windows = convert_window_list_to_dict_list(windows)
-    save_to_json_file(output_dir_path, windows, 'compressed_windows.json')
+    save_windows(output_dir_path, windows, windows_per_file)
 
 
 if __name__ == '__main__':
     # Parameters to be set
-    window_size = 75
-    window_overlap = 37
+    window_size = 600
+    window_overlap = 198
+    windows_per_file = 0    # If 0 is given, all windows are saved to the same file.
 
     input_dir_path = get_path_from_env('INPUTS_PATH')
     output_dir_path = get_path_from_env('OUTPUTS_PATH')
@@ -175,4 +212,4 @@ if __name__ == '__main__':
 
     output_dir_path.mkdir(parents=True, exist_ok=True)
 
-    process_files(window_size, window_overlap, annotations_file_path, input_dir_path, output_dir_path)
+    process_files(window_size, window_overlap, annotations_file_path, input_dir_path, output_dir_path, windows_per_file)
