@@ -113,18 +113,20 @@ def remove_columns(df: pd.DataFrame, columns: List[str]) -> pd.DataFrame:
         df = remove_column(df, col)
     return df
 
-def select_columns(df: pd.DataFrame, relevant_columns: List[str]) -> pd.DataFrame:
+def validate_and_select_columns(df: pd.DataFrame, columns: List[str]) -> pd.DataFrame:
     """
     Keeps only the specified columns from the DataFrame, dropping all others.
     It raises an error if any of the specified columns do not exist in the DataFrame.
 
     Args:
         df (pd.DataFrame): The input DataFrame containing the data.
-        relevant_columns (List[str]): A list of column names to keep.
+        columns (List[str]): A list of column names to keep.
 
     Returns:
         pd.DataFrame: A DataFrame containing only the specified columns that exist in the original DataFrame.
     """
-    if relevant_columns:
-        df = df[relevant_columns]
+    missing = set(columns) - set(df.columns)
+    if missing:
+        raise ValueError(f'Missing columns: {sorted(missing)}')
+    df = df[columns]
     return df
