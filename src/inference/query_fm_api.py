@@ -7,15 +7,15 @@ from typing import Dict, Optional
 from utils.get_env import get_chat_ac_info
 
 
-def get_api_config(model: str = 'meta-llama-3.1-8b-instruct') -> Dict[str, str]:
+def get_api_config(model: str) -> Dict[str, str]:
     """
     Retrieves the API config details from env file and saves all information necessary 
     to make requests to the API into a dictionary. 
 
     Args:
-        model (str, optional): The model to use for chat completions. Defaults to 'meta-llama-3.1-8b-instruct'.
-            Other options (08.05.2025): 'internvl2.5-8b', 'deepseek-r1-distill-llama-70b', 'deepseek-r1',
-            'llama-3.3-70b-instruct', 'llama-4-scout-17b-16e-instruct', 'gemma-3-27b-it'.
+        model (str, optional): The model to use for chat completions. Some options (08.05.2025): 'internvl2.5-8b', 
+            'deepseek-r1-distill-llama-70b', 'deepseek-r1', 'llama-3.3-70b-instruct', 'llama-4-scout-17b-16e-instruct', 
+            'gemma-3-27b-it'.
 
     Returns:
         Dict[str, str]: A dictionary containing API key, base URL, and model name.
@@ -63,12 +63,14 @@ def encode_image_to_base64(image_path: str) -> str:
 
     return f'data:{mime_type};base64,{encoded}'
 
-def send_chat_request(api_config: Dict[str, str], prompt: str, user_message: str, image_path: Optional[str] = None) -> requests.Response:
+def send_chat_request(model: str, prompt: str, user_message: str, image_path: Optional[str] = None) -> requests.Response:
     """
     Sends a chat request to the API with optional image input.
 
     Args:
-        api_config (Dict[str, str]): The API configuration containing the API key, base URL, and model name.
+        model (str]): The model to use for chat completions. Some options (08.05.2025): 'meta-llama-3.1-8b-instruct',
+            'internvl2.5-8b', 'deepseek-r1-distill-llama-70b', 'deepseek-r1', 'llama-3.3-70b-instruct', 
+            'llama-4-scout-17b-16e-instruct', 'gemma-3-27b-it'.
         prompt (str): The system prompt to set the behavior of the assistant.
         user_message (str): The user's query.
         image_path (Optional[str]): Optional image file path to include.
@@ -76,6 +78,8 @@ def send_chat_request(api_config: Dict[str, str], prompt: str, user_message: str
     Returns:
         requests.Response: The HTTP response object from the API request.
     """
+    api_config = get_api_config(model)
+
     headers = {
         'Authorization': f'Bearer {api_config["api_key"]}',
         'Content-Type': 'application/json'
@@ -233,7 +237,6 @@ def print_formatted_exchange(user_message: str, system_response: requests.Respon
     else:
         raise ValueError(f'Cannot access response details, response status code {system_response.status_code} {system_response.reason}.')
 
-
 if __name__ == '__main__':
     model = 'meta-llama-3.1-8b-instruct'
 
@@ -243,8 +246,6 @@ if __name__ == '__main__':
     
     user_message = '''Tell me a joke.'''
 
-    api_config = get_api_config(model)
-
-    system_response = send_chat_request(api_config=api_config, prompt=prompt, user_message=user_message, image_path=image_path)
+    system_response = send_chat_request(model=model, prompt=prompt, user_message=user_message, image_path=image_path)
 
     print_formatted_exchange(user_message, system_response)
