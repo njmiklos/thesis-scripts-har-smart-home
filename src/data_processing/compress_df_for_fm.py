@@ -12,6 +12,7 @@ from utils.get_env import get_path_from_env
 from utils.handle_csv import read_csv_to_pandas_dataframe, get_all_csv_files_in_directory
 from data_processing.annotate_dataset import determine_true_annotation
 from data_processing.compress_measurements import generate_summary
+from data_processing.filter_df import validate_and_select_columns
 from inference.evaluation_utils import TimeMemoryTracer
 from inference.evaluate_ei_model import validate_window_size_and_overlap, save_to_json_file
 
@@ -68,8 +69,8 @@ def format_window(df: pd.DataFrame) -> str:
     """
     return generate_summary(df)
 
-def format_with_sliding_windows(episode_df: pd.DataFrame, annotation: str, window_size: int, 
-                                window_overlap: int) -> Optional[List['Window']]:
+def format_with_sliding_windows(episode_df: pd.DataFrame, annotation: str, columns: Optional[List[str]],
+                                window_size: int, window_overlap: int) -> Optional[List['Window']]:
     """
     Segments the input DataFrame into overlapping windows and processes them for classification
     into a list of Window objects.
@@ -77,6 +78,8 @@ def format_with_sliding_windows(episode_df: pd.DataFrame, annotation: str, windo
     Args:
         episode_df (pd.DataFrame): Input DataFrame with an epipsode data to segment.
         annotation (str): True annotation for the episode.
+        columns (Optional[List[str]]): An error is raised if one of the columns does not exist, 
+            and all other columns are dropped. If not provided, all columns are included.
         window_size (int): Number of rows per sliding window.
         window_overlap (int): Number of rows to overlap between consecutive windows.
 
@@ -84,6 +87,9 @@ def format_with_sliding_windows(episode_df: pd.DataFrame, annotation: str, windo
         Optional[List['Window']]: Returns None if input validation fails. Otherwise, returns a list of Window objects.
     """
     total_rows = len(episode_df)
+
+    if columns is not None:
+        episode_df = validate_and_select_columns(episode_df, columns)
 
     input_valid = validate_window_size_and_overlap(total_rows, window_size, window_overlap)
     if not input_valid:
@@ -154,8 +160,8 @@ def convert_window_list_to_dict_list(windows: List['Window']) -> List[dict]:
     """
     return [window.to_dictionary() for window in windows]
 
-def process_files(window_size: int, window_overlap: int, annotations_file_path: Path, 
-                  input_dir_path: Path, output_dir_path: Path, windows_per_file: int = 0) -> None:
+def process_files(window_size: int, window_overlap: int, annotations_file_path: Path, input_dir_path: Path, 
+                  output_dir_path: Path, columns: Optional[List[str]], windows_per_file: int = 0) -> None:
     """
     Processes every CSV file in the input directory, and writes a combined result to JSON.
 
@@ -165,6 +171,8 @@ def process_files(window_size: int, window_overlap: int, annotations_file_path: 
         annotations_file_path (Path): Path to the file containing true annotations.
         input_dir_path (Path): Directory containing the input CSV files to process.
         output_dir_path (Path): Directory where the final JSON data will be saved.
+        columns (Optional[List[str]]): An error is raised if one of the columns does not exist, 
+            and all other columns are dropped. If not provided, all columns are included.
         windows_per_file (int): Number of windows to be saved per file. If 0 is given,
             all windows are saved to the same file.
     
@@ -190,7 +198,7 @@ def process_files(window_size: int, window_overlap: int, annotations_file_path: 
         last_timestamp = episode_df['time'].iloc[-1]
         true_annotation = determine_true_annotation(annotations_df, last_timestamp)
 
-        episode_windows = format_with_sliding_windows(episode_df, true_annotation, window_size, window_overlap)
+        episode_windows = format_with_sliding_windows(episode_df, true_annotation, columns, window_size, window_overlap)
         
         if episode_windows is not None:
             windows.extend(episode_windows)
@@ -204,7 +212,8 @@ if __name__ == '__main__':
     # Parameters to be set
     window_size = 600
     window_overlap = 198
-    windows_per_file = 0    # If 0 is given, all windows are saved to the same file.
+    windows_per_file = 90    # If 0 is given, all windows are saved to the same file.
+    columns = None
 
     input_dir_path = get_path_from_env('INPUTS_PATH')
     output_dir_path = get_path_from_env('OUTPUTS_PATH')
@@ -212,4 +221,5 @@ if __name__ == '__main__':
 
     output_dir_path.mkdir(parents=True, exist_ok=True)
 
-    process_files(window_size, window_overlap, annotations_file_path, input_dir_path, output_dir_path, windows_per_file)
+    process_files(window_size, window_overlap, annotations_file_path, input_dir_path, output_dir_path, 
+                  columns, windows_per_file)
