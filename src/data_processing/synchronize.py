@@ -2,7 +2,7 @@ import pandas as pd
 from pathlib import Path
 
 from utils.get_env import get_path_from_env
-from utils.handle_csv import get_all_csv_files_in_directory, read_csv_to_pandas_dataframe, save_pandas_dataframe_to_csv
+from utils.file_handler import get_all_csv_files_in_directory, read_csv_to_dataframe, save_dataframe_to_csv
 from data_processing.convert_timestamps import convert_timestamps_from_miliseconds_to_localized_datetime, convert_timestamps_from_localized_datetime_to_miliseconds
 
 def get_global_start_time(files: list) -> pd.Timestamp:
@@ -24,7 +24,7 @@ def get_global_start_time(files: list) -> pd.Timestamp:
     min_timestamp = None
 
     for file_path in files:
-        df = read_csv_to_pandas_dataframe(file_path)
+        df = read_csv_to_dataframe(file_path)
         if not df.empty:
             df = convert_timestamps_from_miliseconds_to_localized_datetime(df, 'time')
             file_min_time = df['time'].min()
@@ -128,7 +128,7 @@ def process_file(file_path: Path, output_path: Path, frequency: str, global_star
     Returns:
         None
     """
-    df = read_csv_to_pandas_dataframe(file_path)
+    df = read_csv_to_dataframe(file_path)
 
     if not df.empty:
         df = convert_timestamps_from_miliseconds_to_localized_datetime(df, 'time')
@@ -145,7 +145,7 @@ def process_file(file_path: Path, output_path: Path, frequency: str, global_star
         df_synchronized = convert_timestamps_from_localized_datetime_to_miliseconds(df_synchronized, 'time')
 
         new_file_path = output_path / file_path.name
-        save_pandas_dataframe_to_csv(df_synchronized, new_file_path)
+        save_dataframe_to_csv(df_synchronized, new_file_path)
         print(f'Saved synchronized file: {output_path / file_path.name}')
     
     else:

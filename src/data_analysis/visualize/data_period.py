@@ -1,5 +1,5 @@
 from utils.get_env import get_path_from_env
-from utils.handle_csv import read_csv_to_pandas_dataframe, get_all_csv_files_in_directory
+from utils.file_handler import read_csv_to_dataframe, get_all_csv_files_in_directory
 from data_analysis.visualize.utils import generate_timeseries_plot
 from data_processing.filter import filter_by_date, filter_by_time_range
 
@@ -15,7 +15,7 @@ if __name__ == '__main__':
     for path in files:
         print(path)
 
-        df = read_csv_to_pandas_dataframe(path)
+        df = read_csv_to_dataframe(path)
         df = filter_by_date(df, '2024-12-07')
         df = filter_by_time_range(df, '07:00:00+01:00', '19:00:00+01:00')
 

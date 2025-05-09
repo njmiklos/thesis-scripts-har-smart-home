@@ -1,7 +1,7 @@
 import pandas as pd
 from pathlib import Path
 
-from utils.handle_csv import get_all_csv_files_in_directory, save_pandas_dataframe_to_csv
+from utils.file_handler import get_all_csv_files_in_directory, save_dataframe_to_csv
 from utils.get_env import get_path_from_env
 from data_processing.infer.sensor_metadata import infer_precision
 from data_analysis.report_utils import calculate_thresholds
@@ -89,7 +89,7 @@ def process_file_in_chunks(file_path: Path, window: int, chunk_size=2000):
         dnsn_df = pd.concat(processed_chunks, ignore_index=True)
 
         file_dnsn_path = dataset_dnsd_path / file_path.name
-        save_pandas_dataframe_to_csv(dnsn_df, file_dnsn_path)
+        save_dataframe_to_csv(dnsn_df, file_dnsn_path)
         print(f'INFO: Saved denoised file: {file_dnsn_path}')
     
     except Exception as e:

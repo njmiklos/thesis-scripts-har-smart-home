@@ -7,7 +7,7 @@ from data_analysis.report_utils import count_readings_out_of_range, calculate_th
 from data_processing.infer.sensor_metadata import infer_expected_sampling_rate
 from utils.get_env import get_path_from_env
 from utils.get_logger import get_logger
-from utils.handle_csv import read_csv_to_pandas_dataframe, get_all_csv_files_in_directory
+from utils.file_handler import read_csv_to_dataframe, get_all_csv_files_in_directory
 
 
 def report_iqr_values(df: pd.DataFrame, col: str) -> str:
@@ -191,7 +191,7 @@ def process_file(logger: logging.Logger) -> None:
         None
     """
     report = []
-    df = read_csv_to_pandas_dataframe(file_path)
+    df = read_csv_to_dataframe(file_path)
 
     if not df.empty:
         columns = df.columns

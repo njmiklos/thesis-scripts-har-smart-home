@@ -10,14 +10,13 @@ each on their unique testing sets.
 import pandas as pd
 import numpy as np
 import time
-import json
 
 from typing import List, Optional
 from pathlib import Path
 
 from inference.edge_impulse_runner import ImpulseRunner
 from utils.get_env import get_path_from_env
-from utils.handle_csv import read_csv_to_pandas_dataframe, get_all_csv_files_in_directory
+from utils.file_handler import read_csv_to_dataframe, get_all_csv_files_in_directory, save_to_json_file
 from inference.classify_with_ei_model import load_model, close_loaded_model, classify_window, get_top_prediction
 from inference.evaluation_utils import ClassificationResults, TimeMemoryTracer
 from data_processing.annotate import determine_true_annotation
@@ -207,23 +206,6 @@ def classify_with_sliding_windows(df: pd.DataFrame, annotation: str, window_size
 
     return complete_results
 
-def save_to_json_file(output_dir_path: Path, dictionary: dict, output_file_name: str = 'classification_report.json'):
-    """
-    Saves the given dictionary to a JSON file.
-
-    Args:
-        output_dir_path (Path): Path to the directory where report files are stored.
-        dictionary (dict): The dictionary to be saved.
-        output_file_name (Optional[str]): Filename for the report, defaults to 'classification_report.json'.
-    """
-    output_path = output_dir_path / output_file_name
-    output_dir_path.mkdir(parents=True, exist_ok=True)
-
-    with open(output_path, 'w') as f:
-        json.dump(dictionary, f, indent=4)
-    
-    print(f'Saved {output_path}.')
-
 def visualize_confusion_matrix(output_dir_path: Path, classes: List[str], confusion_matrix: List[List[int]]) -> None:
     """
     Generate a confusion matrix from JSON data and save it as an image.
@@ -273,7 +255,7 @@ def process_files(window_size: int, window_overlap: int, model_file_path: Path, 
     Returns:
         None
     """
-    annotations_df = read_csv_to_pandas_dataframe(annotations_file_path)
+    annotations_df = read_csv_to_dataframe(annotations_file_path)
 
     loaded_model = load_model(model_file_path)
     model_name = infer_model_name(model_file_path.name)
@@ -288,7 +270,7 @@ def process_files(window_size: int, window_overlap: int, model_file_path: Path, 
         filename = file.name
         print(f'Segmenting and classifying file {counter}/{n_files} {filename}...')
 
-        episode_df = read_csv_to_pandas_dataframe(file)
+        episode_df = read_csv_to_dataframe(file)
 
         last_timestamp = episode_df['time'].iloc[-1]
         true_annotation = determine_true_annotation(annotations_df, last_timestamp)

@@ -5,7 +5,7 @@ from typing import List, Tuple, Optional
 
 from utils.get_env import get_path_from_env
 from data_processing.infer.sensor_metadata import infer_unit
-from utils.handle_csv import read_csv_to_pandas_dataframe, save_pandas_dataframe_to_csv, get_all_csv_files_in_directory
+from utils.file_handler import read_csv_to_dataframe, save_dataframe_to_csv, get_all_csv_files_in_directory
 from data_analysis.report_utils import get_quick_stats_dict, get_root_mean_square_error_srs
 from data_analysis.visualize.utils import generate_histogram, generate_scatter_plot, generate_comparative_scatterplots
 
@@ -42,7 +42,7 @@ def get_df_sample(file_path: Path, sample_size: float) -> pd.DataFrame:
     Returns:
         pd.DataFrame: A sampled DataFrame if the file is not empty; otherwise, an empty DataFrame.
     """
-    df = read_csv_to_pandas_dataframe(file_path)
+    df = read_csv_to_dataframe(file_path)
     if not df.empty:
         df = df.sample(frac=sample_size, random_state=42)
     else:
@@ -146,10 +146,10 @@ def save_summary(summary_df: pd.DataFrame, output_path: Path, modification: str 
         if modification:
             modification = modification.lower()
             print(f'Saving modified summary file to {output_path}/stats_summary_{modification}.csv')
-            save_pandas_dataframe_to_csv(summary_df, output_path / f'stats_summary_{modification}.csv')
+            save_dataframe_to_csv(summary_df, output_path / f'stats_summary_{modification}.csv')
         else:
             print(f'Saving modified summary file to {output_path}/stats_summary_raw.csv')
-            save_pandas_dataframe_to_csv(summary_df, output_path / f'stats_summary_raw.csv')
+            save_dataframe_to_csv(summary_df, output_path / f'stats_summary_raw.csv')
     else:
         print('No data to save.')
 
@@ -188,9 +188,9 @@ def get_dataframes(sampling: bool, og_file_path: Path, mod_file_path: Optional[P
             mod_file_df = get_df_sample(mod_file_path, sample_size)
         
     else:
-        og_file_df = read_csv_to_pandas_dataframe(og_file_path)
+        og_file_df = read_csv_to_dataframe(og_file_path)
         if mod_file_path:
-            mod_file_df = read_csv_to_pandas_dataframe(mod_file_path)
+            mod_file_df = read_csv_to_dataframe(mod_file_path)
 
     return og_file_df, mod_file_df
 
@@ -384,7 +384,7 @@ if __name__ == "__main__":
         mod_dataset_file_paths = get_all_csv_files_in_directory(mod_dataset_path)
         mod_dataset_file_paths.sort()
 
-        summary_df = read_csv_to_pandas_dataframe(analysis_path)
+        summary_df = read_csv_to_dataframe(analysis_path)
         add_column_to_table_summary(og_dataset_file_paths, mod_dataset_file_paths, mod_dataset_path, 
                                     summary_df, modification, histogram, scatter,
                                     sampling, sample_size_motion, sample_size_ambient)

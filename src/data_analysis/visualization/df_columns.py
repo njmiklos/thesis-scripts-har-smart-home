@@ -1,6 +1,6 @@
 from utils.get_env import get_path_from_env
 from utils.file_handler import read_csv_to_dataframe
-from data_analysis.visualize.utils import generate_timeseries_plot, generate_scatter_plot
+from data_analysis.visualization.utils import generate_timeseries_plot, generate_scatter_plot
 from data_processing.filter import filter_by_date
 
 

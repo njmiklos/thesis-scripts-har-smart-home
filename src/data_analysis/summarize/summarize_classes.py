@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import List
 
 from utils.get_env import get_path_from_env
-from utils.handle_csv import get_all_csv_files_in_directory, read_csv_to_pandas_dataframe, save_pandas_dataframe_to_csv
+from utils.file_handler import get_all_csv_files_in_directory, read_csv_to_dataframe, save_dataframe_to_csv
 
 
 def get_classes(df: pd.DataFrame) -> List[str]:
@@ -88,7 +88,7 @@ def process_file(file_path: Path) -> pd.DataFrame:
     Returns:
         pd.DataFrame: The processed dataframe with aggregated values and updated column names.
     """
-    df_og = read_csv_to_pandas_dataframe(file_path)
+    df_og = read_csv_to_dataframe(file_path)
     df_mean = group_values_by_class(df_og, 'mean')
     df_mean = prefix_column_names_with_device_sensor_function(df_mean, file_path, 'mean')
 
@@ -105,7 +105,7 @@ if __name__ == '__main__':
     annotations_path = base_path / 'annotations_combined.csv'
     summary_path = dataset_path / 'summary_classes_synced.csv'
 
-    annotations_df = read_csv_to_pandas_dataframe(annotations_path)
+    annotations_df = read_csv_to_dataframe(annotations_path)
     classes = get_classes(annotations_df)
 
     df = pd.DataFrame(classes, columns=['annotation']) # creates a dataframe with a single column 'class', where every row is a class
@@ -125,7 +125,7 @@ if __name__ == '__main__':
                 print(f'WARNING: {file_path.stem} empty, skipping.')
             counter = counter + 1
         
-        save_pandas_dataframe_to_csv(df, summary_path)
+        save_dataframe_to_csv(df, summary_path)
         print('INFO: All done.')
     else:
         print('WARNING: No CSV files found. Exiting.')

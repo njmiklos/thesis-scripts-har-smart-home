@@ -17,7 +17,7 @@ from typing import List, Optional
 from pathlib import Path
 
 from utils.get_env import get_path_from_env
-from utils.handle_csv import read_csv_to_pandas_dataframe, get_all_csv_files_in_directory
+from utils.file_handler import read_csv_to_dataframe, get_all_csv_files_in_directory
 from inference.classify_with_ei_model import load_model, close_loaded_model, classify_window, get_top_prediction
 from inference.evaluation_utils import ClassificationResults, TimeMemoryTracer
 from inference.evaluate_ei_model import (validate_window_size_and_overlap, save_to_json_file, visualize_confusion_matrix, 
@@ -217,7 +217,7 @@ def process_files(window_size: int, window_overlap: int, model_file_paths: List[
     Returns:
         None
     """
-    annotations_df = read_csv_to_pandas_dataframe(annotations_file_path)
+    annotations_df = read_csv_to_dataframe(annotations_file_path)
 
     loaded_models = load_models(model_file_paths)
 
@@ -231,7 +231,7 @@ def process_files(window_size: int, window_overlap: int, model_file_paths: List[
         filename = file.name
         print(f'Segmenting and classifying file {counter}/{n_files} {filename}...')
 
-        episode_df = read_csv_to_pandas_dataframe(file)
+        episode_df = read_csv_to_dataframe(file)
 
         last_timestamp = episode_df['time'].iloc[-1]
         true_annotation = determine_true_annotation(annotations_df, last_timestamp)

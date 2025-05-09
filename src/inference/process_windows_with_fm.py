@@ -2,10 +2,8 @@
 This code grabs formatted windows from a JSON file, sends them to an API of a Foundation Model, 
 tracks the process, and saves results and metrics into a JSON file.
 """
-import json
-
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 from utils.get_env import get_path_from_env
 from data_processing.compress_for_fm import Window

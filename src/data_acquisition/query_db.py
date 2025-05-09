@@ -4,7 +4,7 @@ from typing import Any
 
 from data_processing.convert_timestamps import convert_timestamps_from_iso8601_to_localized_datetime
 from utils.get_env import get_path_from_env, get_database_info
-from utils.handle_csv import save_pandas_dataframe_to_csv
+from utils.file_handler import save_dataframe_to_csv
 
 
 def query_data(query: str) -> Any:
@@ -99,4 +99,4 @@ if __name__ == '__main__':
     query = formulate_query(device_no, measurement, values_col)
     df = get_query_result(query)
 
-    save_pandas_dataframe_to_csv(df, path_output_file)
+    save_dataframe_to_csv(df, path_output_file)

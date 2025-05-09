@@ -3,7 +3,7 @@ from typing import List
 from pathlib import Path
 
 from utils.get_env import get_path_from_env
-from utils.handle_csv import read_csv_to_pandas_dataframe, save_pandas_dataframe_to_csv
+from utils.file_handler import read_csv_to_dataframe, save_dataframe_to_csv
 from data_processing.infer.metadata import infer_data_collection_days_from_time_column
 from data_processing.filter import filter_by_timestamp, filter_by_date
 
@@ -79,7 +79,7 @@ def save_annotated_episodes(episodes: List[pd.DataFrame], output_path: Path) -> 
     for i, episode in enumerate(episodes):
         try:
             filename = get_filename(i + 1, episode)
-            save_pandas_dataframe_to_csv(episode.copy(), output_path / filename)
+            save_dataframe_to_csv(episode.copy(), output_path / filename)
             print(f'Saved {filename}')
         except Exception as e:
             print(f'Failed to save episode {i + 1}: {e}')
@@ -101,7 +101,7 @@ def segment_df_into_days(df: pd.DataFrame, output_path: Path):
         daily_df = filter_by_date(df, day)
         output_file = f'day_{day}.csv'
         output_file_path = output_path / output_file
-        save_pandas_dataframe_to_csv(daily_df, output_file_path)
+        save_dataframe_to_csv(daily_df, output_file_path)
 
 def segment_df_into_two_parts(df: pd.DataFrame, proportion: int, output_path: Path):
     """
@@ -135,8 +135,8 @@ def segment_df_into_two_parts(df: pd.DataFrame, proportion: int, output_path: Pa
     output_file_b = 'dataset_b.csv'
     output_file_b_path = output_path / output_file_b
 
-    save_pandas_dataframe_to_csv(df_a, output_file_a_path)
-    save_pandas_dataframe_to_csv(df_b, output_file_b_path)
+    save_dataframe_to_csv(df_a, output_file_a_path)
+    save_dataframe_to_csv(df_b, output_file_b_path)
 
 def segment_from_row_position_to_row_position(df: pd.DataFrame, start_position: int, end_position: int, output_path: Path, output_filename: str = 'slice.csv') -> None:
     """
@@ -153,7 +153,7 @@ def segment_from_row_position_to_row_position(df: pd.DataFrame, start_position: 
         None
     """
     new_df = df.iloc[start_position : end_position]
-    save_pandas_dataframe_to_csv(new_df, output_path / output_filename)
+    save_dataframe_to_csv(new_df, output_path / output_filename)
 
 def extract_window_around_timestamp(df: pd.DataFrame, window_size: int, timestamp: int, output_path: Path, output_filename: str = 'slice.csv') -> None:
     """
@@ -284,7 +284,7 @@ if __name__ == '__main__':
     output_path = get_path_from_env('OUTPUTS_PATH')
 
     # Read datasets
-    dataset_df = read_csv_to_pandas_dataframe(input_dataset_path)
+    dataset_df = read_csv_to_dataframe(input_dataset_path)
     #annotations_df = read_csv_to_pandas_dataframe(annotated_episodes_path)
 
     # Split into annotated episodes

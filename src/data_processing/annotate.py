@@ -2,7 +2,7 @@ import pandas as pd
 from pathlib import Path
 
 from utils.get_env import get_path_from_env
-from utils.handle_csv import read_csv_to_pandas_dataframe, save_pandas_dataframe_to_csv, get_all_csv_files_in_directory
+from utils.file_handler import read_csv_to_dataframe, save_dataframe_to_csv, get_all_csv_files_in_directory
 
 
 def determine_true_annotation(annotations: pd.DataFrame, time: int) -> str:
@@ -58,7 +58,7 @@ def process_data_files(path_dataset: Path, path_output_dataset: Path, path_annot
         None.
     """
     paths_data_files = get_all_csv_files_in_directory(path_dataset)
-    annotations = read_csv_to_pandas_dataframe(path_annotation_file)
+    annotations = read_csv_to_dataframe(path_annotation_file)
 
     for file_path in paths_data_files:
         if file_path != path_annotation_file:
@@ -66,9 +66,9 @@ def process_data_files(path_dataset: Path, path_output_dataset: Path, path_annot
             print(f'Processing file: {file_path}')
 
             path_new_file = path_output_dataset / f'{file_stem}.csv'
-            df = read_csv_to_pandas_dataframe(file_path)
+            df = read_csv_to_dataframe(file_path)
             df = insert_annotations(df, annotations)
-            save_pandas_dataframe_to_csv(df, path_new_file)
+            save_dataframe_to_csv(df, path_new_file)
             print(f'Annotated file saved: {path_new_file}')
 
 

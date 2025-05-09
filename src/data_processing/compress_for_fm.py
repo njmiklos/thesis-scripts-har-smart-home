@@ -9,7 +9,7 @@ from typing import List, Optional
 from pathlib import Path
 
 from utils.get_env import get_path_from_env
-from utils.handle_csv import read_csv_to_pandas_dataframe, get_all_csv_files_in_directory
+from utils.file_handler import read_csv_to_dataframe, get_all_csv_files_in_directory
 from data_processing.annotate import determine_true_annotation
 from data_processing.compress import generate_summary
 from data_processing.filter import validate_and_select_columns
@@ -179,7 +179,7 @@ def process_files(window_size: int, window_overlap: int, annotations_file_path: 
     Returns:
         None
     """
-    annotations_df = read_csv_to_pandas_dataframe(annotations_file_path)
+    annotations_df = read_csv_to_dataframe(annotations_file_path)
 
     files = get_all_csv_files_in_directory(input_dir_path)
     n_files = len(files)
@@ -190,7 +190,7 @@ def process_files(window_size: int, window_overlap: int, annotations_file_path: 
         filename = file.name
         print(f'Segmenting and formatting {counter}/{n_files} {filename}...')
 
-        episode_df = read_csv_to_pandas_dataframe(file)
+        episode_df = read_csv_to_dataframe(file)
 
         if 'time' not in episode_df.columns:
             raise ValueError(f"Missing 'time' column in file: {filename}")

@@ -4,7 +4,7 @@ import time
 from pathlib import Path
 
 from data_processing.convert_timestamps import convert_timestamps_from_miliseconds_to_localized_datetime, convert_timestamps_from_localized_datetime_to_miliseconds
-from utils.handle_csv import (read_csv_to_pandas_dataframe, save_pandas_dataframe_to_csv, get_all_csv_files_in_directory)
+from utils.file_handler import (read_csv_to_dataframe, save_dataframe_to_csv, get_all_csv_files_in_directory)
 from utils.get_env import get_path_from_env
 from data_processing.infer.sensor_metadata import infer_precision, infer_expected_sampling_rate
 
@@ -144,7 +144,7 @@ def process_file_in_batches(file_path: Path, output_path: Path, sampling_rate: f
             print(f'Chunk empty, skipping.')
 
     final_df = pd.concat(processed_chunks, ignore_index=True)
-    save_pandas_dataframe_to_csv(final_df, output_path)
+    save_dataframe_to_csv(final_df, output_path)
     print(f'Processed and saved: {output_path}')
 
 if __name__ == '__main__':
@@ -168,7 +168,7 @@ if __name__ == '__main__':
         filename = file.name
         print(f'Processing file {counter}/{no_files} {filename}...')
 
-        df = read_csv_to_pandas_dataframe(file)
+        df = read_csv_to_dataframe(file)
 
         if not manual_sampling_rate:
             sampling_rate = infer_expected_sampling_rate(filename)

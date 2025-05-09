@@ -3,28 +3,14 @@ This file is used to visualize:
 - a training process based on a formatted log report downloaded from Edge Impulse.
 - a confusion matrix based on a JSON classification report downloaded from Edge Impulse.
 """
-import json
 import numpy as np
 
 from pathlib import Path
 
 from utils.get_env import get_path_from_env
-from utils.handle_csv import read_csv_to_pandas_dataframe
+from utils.file_handler import read_csv_to_dataframe, load_json_file
 from data_analysis.visualize.utils import generate_confusion_matrix, generate_comparative_timeseries_plot
 
-
-def load_json_file(file_path: Path) -> dict:
-    """
-    Loads a JSON file.
-
-    Args:
-        file_path (Path): Path to the JSON file.
-
-    Returns:
-        dict: Parsed JSON data.
-    """
-    with open(file_path, 'r') as file:    
-        return json.load(file)
 
 def visualize_training_process(training_process_file_path: Path, output_dir_path: Path) -> None:
     """
@@ -42,7 +28,7 @@ def visualize_training_process(training_process_file_path: Path, output_dir_path
     Returns:
         None
     """
-    training_df = read_csv_to_pandas_dataframe(training_process_file_path)
+    training_df = read_csv_to_dataframe(training_process_file_path)
 
     generate_comparative_timeseries_plot(training_df['Epoch'], training_df['Accuracy'], training_df['Validation Accuracy'], 
                                          'Training Accuracy', 'Validation Accuracy', 'Model Training - Accuracy Over Time', 'Epoch',

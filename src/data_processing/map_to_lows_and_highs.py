@@ -1,6 +1,6 @@
 import pandas as pd
 
-from utils.handle_csv import read_csv_to_pandas_dataframe, save_pandas_dataframe_to_csv
+from utils.file_handler import read_csv_to_dataframe, save_dataframe_to_csv
 from utils.get_env import get_path_from_env
 
 base_path = get_path_from_env('BASE_PATH')
@@ -8,7 +8,7 @@ base_path = get_path_from_env('BASE_PATH')
 # Load the new CSV file
 file_in_path = base_path / 'Synchronized_annotated' / 'summary_classes_synced_merged_selected.csv'
 file_out_path = base_path / 'Synchronized_annotated' / 'summary_classes_synced_merged_selected_mapped.csv'
-df = read_csv_to_pandas_dataframe(file_in_path)
+df = read_csv_to_dataframe(file_in_path)
 
 # Extracting annotation column and numerical data
 annotations_new = df.iloc[:, 0]
@@ -43,4 +43,4 @@ characterization_df = pd.DataFrame(characterization_new)
 characterization_df.insert(0, 'annotation', annotations_new)
 
 # Save the characterization results
-save_pandas_dataframe_to_csv(characterization_df, file_out_path)
+save_dataframe_to_csv(characterization_df, file_out_path)

@@ -1,7 +1,7 @@
 import pandas as pd
 
 from utils.get_env import get_path_from_env
-from utils.handle_csv import (save_pandas_dataframe_to_csv)
+from utils.file_handler import (save_dataframe_to_csv)
 from data_acquisition.query_db import get_query_result
 
 if __name__ == '__main__':
@@ -29,4 +29,4 @@ if __name__ == '__main__':
         else:
             df = pd.merge(df, query_result, on="time", how="outer") # outer includes all rows. If time does not match, filled with NaN
 
-    save_pandas_dataframe_to_csv(df, path_output_file)
+    save_dataframe_to_csv(df, path_output_file)

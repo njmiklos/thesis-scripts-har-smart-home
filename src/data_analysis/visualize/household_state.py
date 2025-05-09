@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import List, Optional
 
 from utils.get_env import get_path_from_env
-from utils.handle_csv import read_csv_to_pandas_dataframe, get_all_csv_files_in_directory
+from utils.file_handler import read_csv_to_dataframe, get_all_csv_files_in_directory
 from data_analysis.visualize.utils import generate_timeseries_plot
 
 
@@ -120,7 +120,7 @@ def process_files(input_dir: Path, output_dir: Path) -> None:
     for file in files:
         print(f'Processing {counter}/{file_no} {file.name}...')
         try:
-            df = read_csv_to_pandas_dataframe(file)
+            df = read_csv_to_dataframe(file)
 
             episode_name = file.stem
             episode_output_dir = output_dir / f'{episode_name}'

@@ -2,7 +2,7 @@ import pandas as pd
 from typing import List
 
 from utils.get_env import get_path_from_env
-from utils.handle_csv import read_csv_to_pandas_dataframe, save_pandas_dataframe_to_csv
+from utils.file_handler import read_csv_to_dataframe, save_dataframe_to_csv
 
 
 def convert_milliseconds_to_minutes(milliseconds: int) -> float:
@@ -191,10 +191,10 @@ if __name__ == '__main__':
     output_file_path = get_path_from_env('OUTPUTS_PATH') / output_file_name
 
     # Read input annotations
-    annotations_df = read_csv_to_pandas_dataframe(annotation_file_path)
+    annotations_df = read_csv_to_dataframe(annotation_file_path)
 
     # Generate and save summary
     summary_df = generate_summary_dataframe(annotations_df)
-    save_pandas_dataframe_to_csv(summary_df, output_file_path)
+    save_dataframe_to_csv(summary_df, output_file_path)
 
     print(f"Summary saved to {output_file_path}")

@@ -1,9 +1,11 @@
 import pandas as pd
+import json
+
 from pathlib import Path
 from typing import List
 
 
-def read_csv_to_pandas_dataframe(path_file: Path) -> pd.DataFrame:
+def read_csv_to_dataframe(path_file: Path) -> pd.DataFrame:
     """
     Reads a CSV file into a pandas DataFrame.
 
@@ -16,7 +18,7 @@ def read_csv_to_pandas_dataframe(path_file: Path) -> pd.DataFrame:
     df = pd.read_csv(path_file)
     return df
 
-def save_pandas_dataframe_to_csv(df: pd.DataFrame, path_file: Path) -> None:
+def save_dataframe_to_csv(df: pd.DataFrame, path_file: Path) -> None:
     """
     Saves a pandas DataFrame to a CSV file.
 
@@ -66,4 +68,32 @@ def get_all_csv_files_in_directory(dir_path: Path):
     files = sorted(dir_path.glob('*.csv'))
     return files
 
+def load_json_file(file_path: Path) -> dict:
+    """
+    Loads a JSON file.
 
+    Args:
+        file_path (Path): Path to the JSON file.
+
+    Returns:
+        dict: Parsed JSON data.
+    """
+    with open(file_path, 'r') as file:    
+        return json.load(file)
+
+def save_to_json_file(output_dir_path: Path, dictionary: dict, output_file_name: str = 'classification_report.json'):
+    """
+    Saves the given dictionary to a JSON file.
+
+    Args:
+        output_dir_path (Path): Path to the directory where report files are stored.
+        dictionary (dict): The dictionary to be saved.
+        output_file_name (Optional[str]): Filename for the report, defaults to 'classification_report.json'.
+    """
+    output_path = output_dir_path / output_file_name
+    output_dir_path.mkdir(parents=True, exist_ok=True)
+
+    with open(output_path, 'w') as f:
+        json.dump(dictionary, f, indent=4)
+    
+    print(f'Saved {output_path}.')

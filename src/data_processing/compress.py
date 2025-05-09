@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import List, Tuple
 
 from utils.get_env import get_path_from_env
-from utils.handle_csv import read_csv_to_pandas_dataframe, get_all_csv_files_in_directory
+from utils.file_handler import read_csv_to_dataframe, get_all_csv_files_in_directory
 from data_processing.convert_timestamps import convert_timestamps_from_miliseconds_to_localized_datetime_srs
 
 
@@ -160,7 +160,7 @@ def process_files(input_dir: Path, output_dir: Path) -> None:
     """
     files = get_all_csv_files_in_directory(input_dir)
     for file in files:
-        df = read_csv_to_pandas_dataframe(file)
+        df = read_csv_to_dataframe(file)
         summary_text = generate_summary(df)
 
         filename = file.stem + '.txt'

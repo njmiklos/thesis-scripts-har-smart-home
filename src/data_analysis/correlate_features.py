@@ -1,4 +1,4 @@
-from utils.handle_csv import save_pandas_dataframe_to_csv
+from utils.file_handler import save_dataframe_to_csv
 from utils.get_env import get_path_from_env
 
 from data_processing.merge import merge_synchronized_files_into_single_df
@@ -22,7 +22,7 @@ if __name__ == '__main__':
         else:
             print(f'WARNING: Could not save a heatmap.')
 
-        save_pandas_dataframe_to_csv(df, output_database_path / output_file)
+        save_dataframe_to_csv(df, output_database_path / output_file)
         print(f'Saved a table to {output_database_path}/{output_file}.')
     else:
         print('WARNING: DataFrame empty, skipping.')

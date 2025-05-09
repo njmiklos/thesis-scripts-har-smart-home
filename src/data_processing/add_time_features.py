@@ -3,7 +3,7 @@ import numpy as np
 from pathlib import Path
 
 from utils.get_env import get_path_from_env
-from utils.handle_csv import read_csv_to_pandas_dataframe, save_pandas_dataframe_to_csv, get_all_csv_files_in_directory
+from utils.file_handler import read_csv_to_dataframe, save_dataframe_to_csv, get_all_csv_files_in_directory
 from data_processing.convert_timestamps import convert_timestamps_from_miliseconds_to_localized_datetime_srs
 
 
@@ -231,13 +231,13 @@ def process_files(input_dir: Path, output_dir: Path, transforms: list) -> None:
     """
     files = get_all_csv_files_in_directory(input_dir)
     for file in files:
-        df = read_csv_to_pandas_dataframe(file)
+        df = read_csv_to_dataframe(file)
 
         for transform in transforms:
             df = transform(df, 'time')
 
         filename = file.stem + '.csv'
-        save_pandas_dataframe_to_csv(df, output_dir / filename)
+        save_dataframe_to_csv(df, output_dir / filename)
 
 
 if __name__ == '__main__':

@@ -10,7 +10,7 @@ import pandas as pd
 from pathlib import Path
 
 from utils.get_env import get_path_from_env
-from utils.handle_csv import read_csv_to_pandas_dataframe, get_all_csv_files_in_directory
+from utils.file_handler import read_csv_to_dataframe, get_all_csv_files_in_directory
 from inference.evaluate_ei_model import validate_window_size_and_overlap
 
 
@@ -61,7 +61,7 @@ def process_files(window_size: int, window_overlap: int, input_dir_path: Path) -
         filename = file.name
         print(f'Segmenting file {counter}/{n_files} {filename}...')
 
-        df = read_csv_to_pandas_dataframe(file)
+        df = read_csv_to_dataframe(file)
         total_no_windows += count_windows(df, window_size, window_overlap)
 
         counter = counter + 1

@@ -4,7 +4,7 @@ import numpy as np
 from pathlib import Path
 from typing import Optional
 
-from utils.handle_csv import get_all_csv_files_in_directory, read_csv_to_pandas_dataframe, save_pandas_dataframe_to_csv
+from utils.file_handler import get_all_csv_files_in_directory, read_csv_to_dataframe, save_dataframe_to_csv
 from utils.get_env import get_path_from_env
 from data_analysis.summarize.summarize_classes import prefix_column_names_with_device_sensor_function
 from data_processing.convert_timestamps import (convert_timestamps_from_miliseconds_to_localized_datetime, 
@@ -24,7 +24,7 @@ def process_file(file_path: Path, skip_unannotated: bool = True) -> pd.DataFrame
     Returns:
         pd.DataFrame: A DataFrame with updated column names and (optionally) filtered rows.
     """
-    df = read_csv_to_pandas_dataframe(file_path)
+    df = read_csv_to_dataframe(file_path)
 
     if skip_unannotated:
         df = df[df['annotation'] != 'other']
@@ -252,7 +252,7 @@ def merge_and_save_synchronized_files(dataset_path: Path, output_path: Path, ski
 
     if not df.empty:
         if not subdivide_into_days:
-            save_pandas_dataframe_to_csv(df, output_path)
+            save_dataframe_to_csv(df, output_path)
         else:
             subdivide_into_file_per_day(df, output_path)
     else:
@@ -278,7 +278,7 @@ if __name__ == '__main__':
 
     # Subdivided only
     dataset_file = dataset_path / 'Transition Activities.csv'
-    df = read_csv_to_pandas_dataframe(dataset_file)
+    df = read_csv_to_dataframe(dataset_file)
 
     output_path = dataset_path
     subdivide_into_file_per_day(df, output_path)
