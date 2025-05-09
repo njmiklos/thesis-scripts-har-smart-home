@@ -10,7 +10,7 @@ from typing import List, Optional
 
 from utils.get_env import get_path_from_env
 from utils.handle_csv import read_csv_to_pandas_dataframe, get_all_csv_files_in_directory
-from data_analysis.visualize_data import generate_timeseries_plot
+from data_analysis.visualize.utils import generate_timeseries_plot
 
 
 def get_column_name(df: pd.DataFrame, measurement: str, location: Optional[str] = None) -> List[str]:

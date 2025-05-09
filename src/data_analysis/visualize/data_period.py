@@ -1,7 +1,7 @@
 from utils.get_env import get_path_from_env
 from utils.handle_csv import read_csv_to_pandas_dataframe, get_all_csv_files_in_directory
-from data_analysis.visualize_data import generate_timeseries_plot
-from data_processing.filter_df import filter_by_date, filter_by_time_range
+from data_analysis.visualize.utils import generate_timeseries_plot
+from data_processing.filter import filter_by_date, filter_by_time_range
 
 
 if __name__ == '__main__':

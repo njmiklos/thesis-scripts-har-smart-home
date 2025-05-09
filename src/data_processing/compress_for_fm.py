@@ -10,9 +10,9 @@ from pathlib import Path
 
 from utils.get_env import get_path_from_env
 from utils.handle_csv import read_csv_to_pandas_dataframe, get_all_csv_files_in_directory
-from data_processing.annotate_dataset import determine_true_annotation
-from data_processing.compress_measurements import generate_summary
-from data_processing.filter_df import validate_and_select_columns
+from data_processing.annotate import determine_true_annotation
+from data_processing.compress import generate_summary
+from data_processing.filter import validate_and_select_columns
 from inference.evaluation_utils import TimeMemoryTracer
 from inference.evaluate_ei_model import validate_window_size_and_overlap, save_to_json_file
 
@@ -209,11 +209,17 @@ def process_files(window_size: int, window_overlap: int, annotations_file_path: 
 
 
 if __name__ == '__main__':
-    # Parameters to be set
+    # Parameters to be set0
     window_size = 600
     window_overlap = 198
     windows_per_file = 90    # If 0 is given, all windows are saved to the same file.
-    columns = None
+    columns = ['time', 'kitchen humidity [%]', 'kitchen luminosity [Lux]', 'kitchen magnitude accelerometer [m/s²]', 
+               'kitchen magnitude gyroscope [°/s]', 'kitchen temperature [°C]', 'entrance humidity [%]', 
+               'entrance luminosity [Lux]', 'entrance magnitude accelerometer [m/s²]', 
+               'entrance magnitude gyroscope [°/s]', 'entrance temperature [°C]', 'living room humidity [%]', 
+               'living room luminosity [Lux]', 'living room magnitude accelerometer [m/s²]', 
+               'living room magnitude gyroscope [°/s]', 'living room temperature [°C]', 'living room air quality index', 
+               'living room CO2 [ppm]', 'living room min sound pressure [dB]', 'living room max sound pressure [dB]']
 
     input_dir_path = get_path_from_env('INPUTS_PATH')
     output_dir_path = get_path_from_env('OUTPUTS_PATH')

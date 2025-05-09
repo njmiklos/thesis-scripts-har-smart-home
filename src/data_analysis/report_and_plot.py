@@ -4,10 +4,10 @@ from pathlib import Path
 from typing import List, Tuple, Optional
 
 from utils.get_env import get_path_from_env
-from data_processing.infer_sensor_metadata import infer_unit
+from data_processing.infer.sensor_metadata import infer_unit
 from utils.handle_csv import read_csv_to_pandas_dataframe, save_pandas_dataframe_to_csv, get_all_csv_files_in_directory
-from data_analysis.explore_data_pandas import get_quick_stats_dict, get_root_mean_square_error_srs
-from data_analysis.visualize_data import generate_histogram, generate_scatter_plot, generate_comparative_scatterplots
+from data_analysis.report_utils import get_quick_stats_dict, get_root_mean_square_error_srs
+from data_analysis.visualize.utils import generate_histogram, generate_scatter_plot, generate_comparative_scatterplots
 
 
 def get_labels(device_type: str, measurement: str, modification: str) -> Tuple:

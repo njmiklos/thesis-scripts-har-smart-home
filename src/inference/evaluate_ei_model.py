@@ -20,9 +20,9 @@ from utils.get_env import get_path_from_env
 from utils.handle_csv import read_csv_to_pandas_dataframe, get_all_csv_files_in_directory
 from inference.classify_with_ei_model import load_model, close_loaded_model, classify_window, get_top_prediction
 from inference.evaluation_utils import ClassificationResults, TimeMemoryTracer
-from data_processing.annotate_dataset import determine_true_annotation
-from data_analysis.visualize_ei_report import convert_matrix_values_to_percentages
-from data_analysis.visualize_data import generate_confusion_matrix
+from data_processing.annotate import determine_true_annotation
+from data_analysis.visualize.ei_report import convert_matrix_values_to_percentages
+from data_analysis.visualize.utils import generate_confusion_matrix
 
 
 def get_model_column_indices(model_name: str, df: pd.DataFrame) -> List[int]:

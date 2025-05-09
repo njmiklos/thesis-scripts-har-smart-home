@@ -16,7 +16,7 @@ from utils.handle_csv import read_csv_to_pandas_dataframe, get_all_csv_files_in_
 from inference.query_fm_api import get_api_config, send_chat_request, get_system_message, get_request_total_tokens
 from inference.evaluation_utils import ClassificationResults, TimeMemoryTracer
 from inference.evaluate_ei_model import validate_window_size_and_overlap, save_to_json_file, visualize_confusion_matrix
-from data_processing.annotate_dataset import determine_true_annotation
+from data_processing.annotate import determine_true_annotation
 
 
 class ClassificationResultsFM(ClassificationResults):

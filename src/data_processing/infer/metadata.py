@@ -5,8 +5,8 @@ from pathlib import Path
 
 from data_processing.convert_timestamps import (convert_timestamps_from_miliseconds_to_localized_datetime_srs, 
                                                 convert_timestamps_from_localized_datetime_to_miliseconds_srs)
-from data_analysis.summarize_episodes_counts_and_lenghts import generate_summary_dataframe
-from data_analysis.summarize_classes import process_file
+from data_analysis.summarize.summarize_episodes_counts_and_lenghts import generate_summary_dataframe
+from data_analysis.summarize.summarize_classes import process_file
 
 
 def infer_data_collection_days_from_time_column(srs: pd.Series) -> List[str]:

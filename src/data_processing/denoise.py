@@ -3,8 +3,8 @@ from pathlib import Path
 
 from utils.handle_csv import get_all_csv_files_in_directory, save_pandas_dataframe_to_csv
 from utils.get_env import get_path_from_env
-from data_processing.infer_sensor_metadata import infer_precision
-from data_analysis.explore_data_pandas import calculate_thresholds
+from data_processing.infer.sensor_metadata import infer_precision
+from data_analysis.report_utils import calculate_thresholds
 
 
 def get_simple_moving_average(df: pd.DataFrame, col: str, window: int) -> pd.DataFrame:

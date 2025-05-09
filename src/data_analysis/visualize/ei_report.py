@@ -10,7 +10,7 @@ from pathlib import Path
 
 from utils.get_env import get_path_from_env
 from utils.handle_csv import read_csv_to_pandas_dataframe
-from data_analysis.visualize_data import generate_confusion_matrix, generate_comparative_timeseries_plot
+from data_analysis.visualize.utils import generate_confusion_matrix, generate_comparative_timeseries_plot
 
 
 def load_json_file(file_path: Path) -> dict:
