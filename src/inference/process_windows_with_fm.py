@@ -8,7 +8,7 @@ from typing import List
 from utils.get_env import get_path_from_env
 from utils.file_handler import save_to_json_file, load_json_file
 from data_processing.compress_for_fm import Window
-from inference.query_fm_api import send_chat_request
+from inference.query_fm_api import send_chat_request, get_rate_limits
 from inference.evaluate.utils import TimeMemoryTracer
 
 
@@ -44,12 +44,13 @@ class ExtendedWindow(Window):
 
     def to_dictionary(self) -> dict:
         """
-        Returns the data about the object as a dictionary.
+        Returns the data about the object as a dictionary with processing time in seconds.
 
         Returns:
             dict: A dictionary representation of a ExtendedWindow object.
         """
         window_dict = super().to_dictionary()
+        window_dict['processing_time_s'] = window_dict.pop('processing_time_ms') / 1000
         window_dict['tokens'] = self.tokens
         return window_dict
 
@@ -137,7 +138,7 @@ def save_windows(output_dir_path: Path, windows: List['Window'], windows_per_fil
         windows_per_file (int): Number of windows to be saved per file. If 0 is given,
             all windows are saved to the same file.
         stage (int): Stage of classification with an FM, either 1 or 2. It definies the prompt content.
-            Stage 1 summarizes and stage 2 classfies. (Prompt texts are intentionally left out. 
+            Stage 1 summarizes and stage 2 classifies. (Prompt texts are intentionally left out. 
             Please refer to the finished thesis.)
 
     Returns:
@@ -170,7 +171,7 @@ def process_windows(model_name: str, stage: int, input_dir_path: Path, output_di
 
     Args:
         stage (int): Stage of classification with an FM, either 1 or 2. It definies the prompt content.
-            Stage 1 summarizes and stage 2 classfies. (Prompt texts are intentionally left out. 
+            Stage 1 summarizes and stage 2 classifies. (Prompt texts are intentionally left out. 
             Please refer to the finished thesis.)
         input_dir_path (Path): Directory containing the input to process.
         output_dir_path (Path): Directory where the final JSON data will be saved.
@@ -182,30 +183,35 @@ def process_windows(model_name: str, stage: int, input_dir_path: Path, output_di
     """
     windows_dict = load_json_file(input_dir_path)
     windows = convert_dict_list_to_window_list(windows_dict)
+    limits_at_end = dict()
 
+    if stage == 1:
+        prompt = get_prompt(1, input_dir_path)
+    else:
+        prompt = get_prompt(2, input_dir_path)
+    
     for counter, window in enumerate(windows, start=1):
         print(f'Working on window {counter}/{len(windows)}...')
         resource_tracker = TimeMemoryTracer()
 
         validate_window(window)
 
-        if stage == 1:
-            prompt = get_prompt(1, input_dir_path)
-        else:
-            prompt = get_prompt(2, input_dir_path)
         response = send_chat_request(model=model_name, prompt=prompt, user_message=window.data)
-        response_json = response.json()
 
         _, max_memory_kb = resource_tracker.stop()
 
-        latency = response_json.elapsed
+        latency_ms = response.elapsed.total_seconds() * 1000
+        response_json = response.json()
         system_text = response_json['choices'][0]['message']['content']
         total_tokens = response_json['usage']['total_tokens']
+        limits_at_end = get_rate_limits(system_text)
 
-        window_update = ExtendedWindow(window.true_annotation, system_text, latency, max_memory_kb, total_tokens)
+        window_update = ExtendedWindow(window.true_annotation, system_text, latency_ms, max_memory_kb, total_tokens)
         window.update(window_update)
 
-    print(f'Done.')
+    print(f'Done. Remaining rate limits:')
+    for key, value in limits_at_end.items():
+        print(f'- {key}: {value}')
 
     save_windows(output_dir_path, windows, windows_per_file, stage)
 

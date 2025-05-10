@@ -211,9 +211,9 @@ def get_latency(system_response: requests.Response) -> str:
         system_response (requests.Response): The HTTP response object.
 
     Returns:
-        str: The latency of the response.
+        str: The latency of the response in seconds.
     """
-    return str(system_response.elapsed)
+    return str(system_response.elapsed.total_seconds())
 
 def print_formatted_exchange(user_message: str, system_response: requests.Response) -> None:
     """
