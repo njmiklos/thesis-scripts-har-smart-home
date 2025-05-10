@@ -156,12 +156,12 @@ def save_windows(output_dir_path: Path, windows: List['Window'], windows_per_fil
             end_pos = start_pos + windows_per_file
             chunk = windows[start_pos : end_pos]
             chunk_dicts = convert_window_list_to_dict_list(chunk)
-            filename = f'compressed_windows_{file_counter}.json'
+            filename = f'stage_{stage}_windows_{file_counter}.json'
             save_to_json_file(output_dir_path, chunk_dicts, filename)
     else:
         file_counter = 1
         dicts = convert_window_list_to_dict_list(windows)
-        save_to_json_file(output_dir_path, dicts, f'windows_stage_{stage}.json')
+        save_to_json_file(output_dir_path, dicts, f'stage_{stage}_windows.json')
     
     print(f'Saved {total_windows} window(s) to {file_counter} file(s).')
 
