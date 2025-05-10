@@ -13,7 +13,7 @@ def get_api_config(model: str) -> Dict[str, str]:
     to make requests to the API into a dictionary. 
 
     Args:
-        model (str, optional): The model to use for chat completions. Some options (08.05.2025): 'internvl2.5-8b', 
+        model (str): The model to use for chat completions. Some options (08.05.2025): 'internvl2.5-8b', 
             'deepseek-r1-distill-llama-70b', 'deepseek-r1', 'llama-3.3-70b-instruct', 'llama-4-scout-17b-16e-instruct', 
             'gemma-3-27b-it'.
 
@@ -68,7 +68,7 @@ def send_chat_request(model: str, prompt: str, user_message: str, image_path: Op
     Sends a chat request to the API with optional image input.
 
     Args:
-        model (str]): The model to use for chat completions. Some options (08.05.2025): 'meta-llama-3.1-8b-instruct',
+        model (str): The model to use for chat completions. Some options (08.05.2025): 'meta-llama-3.1-8b-instruct',
             'internvl2.5-8b', 'deepseek-r1-distill-llama-70b', 'deepseek-r1', 'llama-3.3-70b-instruct', 
             'llama-4-scout-17b-16e-instruct', 'gemma-3-27b-it'.
         prompt (str): The system prompt to set the behavior of the assistant.

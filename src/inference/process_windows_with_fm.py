@@ -170,6 +170,9 @@ def process_windows(model_name: str, stage: int, input_dir_path: Path, output_di
     Processes windows saved in a JSON file, and writes a combined result to JSON.
 
     Args:
+        model_name (str): The model to use for chat completions. Some options (08.05.2025): 'internvl2.5-8b', 
+        'deepseek-r1-distill-llama-70b', 'deepseek-r1', 'llama-3.3-70b-instruct', 'llama-4-scout-17b-16e-instruct', 
+        'gemma-3-27b-it'.
         stage (int): Stage of classification with an FM, either 1 or 2. It definies the prompt content.
             Stage 1 summarizes and stage 2 classifies. (Prompt texts are intentionally left out. 
             Please refer to the finished thesis.)
@@ -218,7 +221,7 @@ def process_windows(model_name: str, stage: int, input_dir_path: Path, output_di
 
 if __name__ == '__main__':
     stage = 1
-    model_name = 'llama-3.3-70b-instruct'
+    model_name = 'gemma-3-27b-it'
     windows_per_file = 90    # If 0 is given, all windows are saved to the same file.
 
     input_dir_path = get_path_from_env('INPUTS_PATH')
