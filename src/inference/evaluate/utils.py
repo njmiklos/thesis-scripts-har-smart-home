@@ -67,8 +67,8 @@ class ClassificationResults:
                 - 'weighted_avg_precision' (float): Weighted average precision.
                 - 'weighted_avg_recall' (float): Weighted average recall.
                 - 'weighted_avg_f1_score' (float): Weighted average F1 score.
-                - 'classification_time_ms' (float): The worst-case classification time (ms).
-                - 'peak_memory_kb' (float): The worst-case memory usage (kB),
+                - 'max_classification_time_ms' (float): The worst-case classification time (ms).
+                - 'peak_classification_memory_kb' (float): The worst-case memory usage (kB),
                 - 'total_classification_time_secs' (float): Total classification time in seconds.
         """
         if self.actual_annotations is None:

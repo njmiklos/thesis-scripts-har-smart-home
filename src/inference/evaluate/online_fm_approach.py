@@ -49,11 +49,18 @@ class ResultsFM(ClassificationResults):
                 - 'weighted_avg_precision' (float): Weighted average precision.
                 - 'weighted_avg_recall' (float): Weighted average recall.
                 - 'weighted_avg_f1_score' (float): Weighted average F1 score.
-                - 'classification_time_ms' (float): The worst-case classification time (ms).
-                - 'peak_memory_kb' (float): The worst-case memory usage (kB),
+                - 'max_classification_time_s' (float): The worst-case classification time (s).
+                - 'max_classification_memory_kb' (float): The worst-case memory usage (kB),
                 - 'total_classification_time_secs' (float): Total classification time in seconds.
                 - 'total_prompt_tokens' (int): Total number of tokens needed for the classification.
         """
         report = super().generate_report(total_classification_time_secs)
+        report['max_classification_time_s'] = report.pop('max_classification_time_ms') / 1000
         report['total_prompt_tokens'] = self.total_prompt_tokens
         return report
+
+def calculate_total_classification_time_secs(List['ResultsFM']) -> float:
+    pass
+
+def calculate_total_prompt_tokens(List['ResultsFM']) -> int:
+    pass
