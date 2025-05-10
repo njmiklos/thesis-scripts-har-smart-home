@@ -184,7 +184,7 @@ def process_windows(model_name: str, stage: int, input_dir_path: Path, output_di
     Returns:
         None
     """
-    windows_dict = load_json_file(input_dir_path)
+    windows_dict = load_json_file(input_dir_path / 'compressed_windows_test.json')
     windows = convert_dict_list_to_window_list(windows_dict)
     limits_at_end = dict()
 
@@ -204,10 +204,10 @@ def process_windows(model_name: str, stage: int, input_dir_path: Path, output_di
         _, max_memory_kb = resource_tracker.stop()
 
         latency_ms = response.elapsed.total_seconds() * 1000
+        limits_at_end = get_rate_limits(response)
         response_json = response.json()
         system_text = response_json['choices'][0]['message']['content']
         total_tokens = response_json['usage']['total_tokens']
-        limits_at_end = get_rate_limits(system_text)
 
         window_update = ExtendedWindow(window.true_annotation, system_text, latency_ms, max_memory_kb, total_tokens)
         window.update(window_update)
