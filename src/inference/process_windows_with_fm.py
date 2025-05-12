@@ -18,8 +18,8 @@ class ExtendedWindow(Window):
 
     Attributes:
         true_annotation (str): True annotation for the window of data.
-        data (str): The formatted window data or a result of its processing by a model.
-        processing_time_ms (float): Total processing time of the window.
+        data (str): A summary (stage 1) or an annotation (stage 2) for a window of data.
+        processing_time_ms (float): Total processing time of the window in miliseconds.
         max_memory_kb (float): The highest memory usage (kB) observed during the window processing.
         tokens (int): Total number of tokens used for the window at every stage.
     """
@@ -33,7 +33,10 @@ class ExtendedWindow(Window):
 
     def update(self, other: 'ExtendedWindow'):
         """
-        Merges two windows' data by creating totals.
+        Updates this window by aggregating values from another window.
+
+        Args:
+            other (ExtendedWindow): The window whose values will be merged.
         """
         if self.data != other.data:
             self.data = other.data
@@ -70,39 +73,23 @@ def validate_window_as_dict(dictionary: dict) -> None:
 
 def convert_dict_list_to_window_list(windows_dict: List[dict]) -> List['ExtendedWindow']:
     """
-    Converts a list of dictionaries to a list of Window objects.
+    Converts a list of dictionaries into ExtendedWindow objects.
 
     Args:
-        windows_dict (List[dict]): A list of dictionaries representing Window objects.
-    
+        windows_dict (List[dict]): Serialized window data.
+
     Returns:
-        List['ExtendedWindow']: A list of ExtendedWindow objects.
+        List[ExtendedWindow]: Parsed list of ExtendedWindow objects.
     """
     windows = list()
     for d in windows_dict:
         validate_window_as_dict(d)
-        window = ExtendedWindow(d['true_annotation'], d['data'], d['processing_time_ms'], d['max_memory_kb'])
+        if 'tokens' not in d: # stage 1 -> has not been processed by an FM -> no tokens have been used
+            window = ExtendedWindow(d['true_annotation'], d['data'], d['processing_time_ms'], d['max_memory_kb'], 0)
+        else:   # stage 2
+            window = ExtendedWindow(d['true_annotation'], d['data'], d['processing_time_ms'], d['max_memory_kb'], d['tokens'])
         windows.append(window)
     return windows
-
-def get_prompt(stage: int, input_dir_path: Path) -> str:
-    """
-    Reads in input prompt text saved in a text file based on the classification stage (details are in my thesis).
-
-    Args:
-        stage (int): Stage of the classification process with the FM.
-        input_dir_path (Path): Directory containing the input to process.
-    
-    Returns:
-        str: Prompt text.
-    """
-    if stage not in (1, 2):
-        raise ValueError(f'Stage must be either 1 or 2, got {stage}.')
-
-    filename = f'prompt_stage_{stage}.txt'
-
-    with open(input_dir_path / filename) as f:
-        return f.read()
 
 def convert_window_list_to_dict_list(windows: List['ExtendedWindow']) -> List[dict]:
     """
@@ -116,55 +103,64 @@ def convert_window_list_to_dict_list(windows: List['ExtendedWindow']) -> List[di
     """
     return [window.to_dictionary() for window in windows]
 
-def save_windows(output_dir_path: Path, windows: List['ExtendedWindow'], stage: int) -> None:
+def get_and_validate_prompt(input_dir_path: Path, prompt_filename: str) -> str:
+    """
+    Reads and validates prompt text from a file.
+
+    Args:
+        input_dir_path (Path): Path to the directory with the prompt file.
+        prompt_filename (str): Filename of the prompt text file.
+
+    Returns:
+        str: Prompt text.
+    """
+    prompt = ''
+    with open(input_dir_path / prompt_filename) as f:
+        prompt = f.read()
+    if prompt == '':
+        raise ValueError('Prompt cannot be empty.')
+    return prompt
+
+def save_windows(output_dir_path: Path, output_filename: str, windows: List['ExtendedWindow']) -> None:
     """
     Saves ExtendedWindows to a JSON file.
 
     Args:
         output_dir_path (Path): Directory where the final JSON data will be saved.
+        output_filename (str): Output filename.
         windows (List['ExtendedWindow']): A list of ExtendedWindow objects.
-        stage (int): Stage of classification with an FM, either 1 or 2. It definies the prompt content.
-            Stage 1 summarizes and stage 2 classifies. (Prompt texts are intentionally left out. 
-            Please refer to the finished thesis.)
 
     Returns:
         None
     """   
     total_windows = len(windows)
     dicts = convert_window_list_to_dict_list(windows)
-    output_filename = f'stage_{stage}_windows.json'
     save_to_json_file(output_dir_path, dicts, output_filename)
     
     print(f'Saved {total_windows} window(s) to file {output_dir_path}/{output_filename}')
 
-def process_windows(model_name: str, stage: int, input_dir_path: Path, output_dir_path: Path, 
-                    input_windows_filename: str) -> None:
+def process_windows(model_name: str, input_dir_path: Path, output_dir_path: Path, 
+                    input_windows_filename: str, prompt_filename: str) -> None:
     """
     Processes windows saved in a JSON file, and writes a combined result to JSON.
 
     Args:
-        model_name (str): The model to use for chat completions. Some options (08.05.2025): 'internvl2.5-8b', 
+        model_name (str): Model identifier for the FM API. Some options (08.05.2025): 'internvl2.5-8b', 
         'deepseek-r1-distill-llama-70b', 'deepseek-r1', 'llama-3.3-70b-instruct', 'llama-4-scout-17b-16e-instruct', 
         'gemma-3-27b-it'.
-        stage (int): Stage of classification with an FM, either 1 or 2. It definies the prompt content.
-            Stage 1 summarizes and stage 2 classifies. (Prompt texts are intentionally left out. 
-            Please refer to the finished thesis.)
-        input_dir_path (Path): Directory containing the input to process.
-        output_dir_path (Path): Directory where the final JSON data will be saved.
-        input_windows_filename (str): Name of JSON file where input windows are.
-    
+        input_dir_path (Path): Path to the directory with input JSON.
+        output_dir_path (Path): Path to save annotated window results.
+        input_windows_filename (str): Filename of the input JSON.
+        prompt_filename (str): Filename of the prompt text file.
+
     Returns:
         None
     """
     windows_dict = load_json_file(input_dir_path / input_windows_filename)
     windows = convert_dict_list_to_window_list(windows_dict)
     limits_at_end = dict()
+    prompt = get_and_validate_prompt(input_dir_path, prompt_filename)
 
-    if stage == 1:
-        prompt = get_prompt(1, input_dir_path)
-    else:
-        prompt = get_prompt(2, input_dir_path)
-    
     for counter, window in enumerate(windows, start=1):
         print(f'Working on window {counter}/{len(windows)}...')
         resource_tracker = TimeMemoryTracer()
@@ -186,17 +182,19 @@ def process_windows(model_name: str, stage: int, input_dir_path: Path, output_di
     for key, value in limits_at_end.items():
         print(f'- {key}: {value}')
 
-    save_windows(output_dir_path, windows, stage)
+    output_filename = input_windows_filename
+    save_windows(output_dir_path, output_filename, windows)
 
 
 if __name__ == '__main__':
     stage = 1
     model_name = 'gemma-3-27b-it'
-    input_windows_filename = 'stage_1_windows_test.json'
+    input_windows_filename = 'compressed_windows_test.json'
+    prompt_filename = f'prompt_stage_{stage}.txt'
 
     input_dir_path = get_path_from_env('INPUTS_PATH')
-    output_dir_path = get_path_from_env('OUTPUTS_PATH')
+    output_dir_path = get_path_from_env('OUTPUTS_PATH') / f'stage_{stage}'
 
     output_dir_path.mkdir(parents=True, exist_ok=True)
 
-    process_windows(model_name, stage, input_dir_path, output_dir_path, input_windows_filename)
+    process_windows(model_name, input_dir_path, output_dir_path, input_windows_filename, prompt_filename)
