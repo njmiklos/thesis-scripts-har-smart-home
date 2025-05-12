@@ -167,15 +167,14 @@ def process_windows(model_name: str, input_dir_path: Path, output_dir_path: Path
 
         response = send_chat_request(model=model_name, prompt=prompt, user_message=window.data)
 
-        _, max_memory_kb = resource_tracker.stop()
+        time_ms, max_memory_kb = resource_tracker.stop()
 
-        latency_ms = response.elapsed.total_seconds() * 1000
         limits_at_end = get_rate_limits(response)
         response_json = response.json()
         system_text = response_json['choices'][0]['message']['content']
         total_tokens = response_json['usage']['total_tokens']
 
-        window_update = ExtendedWindow(window.true_annotation, system_text, latency_ms, max_memory_kb, total_tokens)
+        window_update = ExtendedWindow(window.true_annotation, system_text, time_ms, max_memory_kb, total_tokens)
         window.update(window_update)
 
     print(f'Done. Remaining rate limits:')
