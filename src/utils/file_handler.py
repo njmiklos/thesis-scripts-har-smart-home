@@ -64,8 +64,30 @@ def infer_frequency(df: pd.DataFrame, time_col: str) -> str:
         raise ValueError("Could not infer frequency. Ensure timestamps are evenly spaced.")
     return inferred_freq
 
-def get_all_csv_files_in_directory(dir_path: Path):
+def get_all_csv_files_in_directory(dir_path: Path) -> List[Path]:
+    """
+    Retrieves and returns all .csv files in the specified directory, sorted alphabetically.
+
+    Args:
+        dir_path (Path): Path to the directory to search.
+
+    Returns:
+        List[Path]: A list of Path objects pointing to .csv files in the directory.
+    """
     files = sorted(dir_path.glob('*.csv'))
+    return files
+
+def get_all_json_files_in_directory(dir_path: Path) -> List[Path]:
+    """
+    Retrieves and returns all .json files in the specified directory, sorted alphabetically.
+
+    Args:
+        dir_path (Path): Path to the directory to search.
+
+    Returns:
+        List[Path]: A list of Path objects pointing to .json files in the directory.
+    """
+    files = sorted(dir_path.glob('*.json'))
     return files
 
 def load_json_file(file_path: Path) -> dict:
