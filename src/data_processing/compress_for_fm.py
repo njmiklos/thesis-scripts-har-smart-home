@@ -19,12 +19,12 @@ from inference.evaluate.ei_model import validate_window_size_and_overlap, save_t
 
 class Window():
     """
-    An object holding data of a window of data.
+    An object holding data of a window.
 
     Attributes:
         true_annotation (str): True annotation for the window of data.
-        data (str): The formatted window data or a result of its processing by a model.
-        processing_time_ms (float): Total processing time of the window.
+        data (str): The formatted window data.
+        processing_time_ms (float): Total processing time of the window in miliseconds.
         max_memory_kb (float): The highest memory usage (kB) observed during the window processing.
     """
     def __init__(self, true_annotation: str, data: str, processing_time_ms: float = 0, 
@@ -104,14 +104,26 @@ def format_with_sliding_windows(episode_df: pd.DataFrame, annotation: str, colum
 
         resource_tracker = TimeMemoryTracer()
         formatted_window_data = format_window(window_df)
-        window_processing_time_ms, window_peak_memory_kb = resource_tracker.stop()
+        processing_time_ms, peak_memory_kb = resource_tracker.stop()
 
-        window_results = Window(annotation, formatted_window_data, window_processing_time_ms, window_peak_memory_kb)
+        window_results = Window(annotation, formatted_window_data, processing_time_ms, peak_memory_kb)
         windows.append(window_results)
 
         start_position += (window_size - window_overlap)
 
     return windows
+
+def convert_window_list_to_dict_list(windows: List['Window']) -> List[dict]:
+    """
+    Convert the list of Window objects to a list of dictionaries.
+
+    Args:
+        windows (List['Window']): A list of Window objects.
+    
+    Returns:
+        List[dict]: A list of dictionaries representing Window objects.
+    """
+    return [window.to_dictionary() for window in windows]
 
 def save_windows(output_dir_path: Path, windows: List['Window'], windows_per_file: int) -> None:
     """
@@ -148,26 +160,32 @@ def save_windows(output_dir_path: Path, windows: List['Window'], windows_per_fil
     
     print(f'Saved {total_windows} window(s) to {file_counter} file(s).')
 
-def convert_window_list_to_dict_list(windows: List['Window']) -> List[dict]:
+def get_last_timestamp(df: pd.DataFrame, time_col_name: str, filename: str) -> int:
     """
-    Convert the list of Window objects to a list of dictionaries.
+    Returns the value of the last timestamp as an integer in miliseconds.
 
     Args:
-        windows (List['Window']): A list of Window objects.
+        df (pd.DataFrame): The DataFrame with the data.
+        time_col_name (str): Name of column with the timestamps in miliseconds.
+        filename (str): Name of the file holdinf the DataFrame and its time column.
     
     Returns:
-        List[dict]: A list of dictionaries representing Window objects.
+        int: The last timestamp in the timecolumn of the DataFrame in miliseconds.
     """
-    return [window.to_dictionary() for window in windows]
+    if time_col_name not in df.columns:
+        raise ValueError(f"Missing {time_col_name} column in file: {filename}")
+    return df[time_col_name].iloc[-1]
 
-def process_files(window_size: int, window_overlap: int, annotations_file_path: Path, input_dir_path: Path, 
-                  output_dir_path: Path, columns: Optional[List[str]], windows_per_file: int = 0) -> None:
+def process_files(window_size: int, window_overlap: int, time_col_name: str, annotations_file_path: Path, 
+                  input_dir_path: Path, output_dir_path: Path, columns: Optional[List[str]], 
+                  windows_per_file: int = 0) -> None:
     """
     Processes every CSV file in the input directory, and writes a combined result to JSON.
 
     Args:
         window_size (int): Number of rows per sliding window.
         window_overlap (int): Number of rows to overlap between consecutive windows.
+        time_col_name (str): Name of column with the timestamps in miliseconds.
         annotations_file_path (Path): Path to the file containing true annotations.
         input_dir_path (Path): Directory containing the input CSV files to process.
         output_dir_path (Path): Directory where the final JSON data will be saved.
@@ -184,7 +202,7 @@ def process_files(window_size: int, window_overlap: int, annotations_file_path: 
     files = get_all_csv_files_in_directory(input_dir_path)
     n_files = len(files)
 
-    windows = list()
+    total_windows = list()
 
     for counter, file in enumerate(files, start=1):
         filename = file.name
@@ -192,27 +210,25 @@ def process_files(window_size: int, window_overlap: int, annotations_file_path: 
 
         episode_df = read_csv_to_dataframe(file)
 
-        if 'time' not in episode_df.columns:
-            raise ValueError(f"Missing 'time' column in file: {filename}")
-        
-        last_timestamp = episode_df['time'].iloc[-1]
+        last_timestamp = get_last_timestamp(episode_df, time_col_name, filename)
         true_annotation = determine_true_annotation(annotations_df, last_timestamp)
 
         episode_windows = format_with_sliding_windows(episode_df, true_annotation, columns, window_size, window_overlap)
         
         if episode_windows is not None:
-            windows.extend(episode_windows)
+            total_windows.extend(episode_windows)
 
     print(f'Done.')
 
-    save_windows(output_dir_path, windows, windows_per_file)
+    save_windows(output_dir_path, total_windows, windows_per_file)
 
 
 if __name__ == '__main__':
     # Parameters to be set0
     window_size = 600
     window_overlap = 198
-    windows_per_file = 90    # If 0 is given, all windows are saved to the same file.
+    windows_per_file = 90    # Allows processing in batches. If 0 is given, all windows are saved to the same file.
+    time_col_name = 'time'
     columns = ['time', 'kitchen humidity [%]', 'kitchen luminosity [Lux]', 'kitchen magnitude accelerometer [m/s²]', 
                'kitchen magnitude gyroscope [°/s]', 'kitchen temperature [°C]', 'entrance humidity [%]', 
                'entrance luminosity [Lux]', 'entrance magnitude accelerometer [m/s²]', 
@@ -227,5 +243,5 @@ if __name__ == '__main__':
 
     output_dir_path.mkdir(parents=True, exist_ok=True)
 
-    process_files(window_size, window_overlap, annotations_file_path, input_dir_path, output_dir_path, 
+    process_files(window_size, window_overlap, time_col_name, annotations_file_path, input_dir_path, output_dir_path, 
                   columns, windows_per_file)
