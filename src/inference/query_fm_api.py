@@ -133,6 +133,33 @@ def handle_rate_limit(response: requests.Response) -> None:
         print(f'Approaching rate limit. Sleeping for {reset + 1} seconds...')
         time.sleep(reset + 1)
 
+def handle_http_error(e: requests.exceptions.HTTPError, attempt: int, max_retries: int, backoff_factor: float) -> bool:
+    """
+    Handles HTTP errors and decides whether to retry.
+
+    Returns:
+        bool: True if the operation should be retried, False otherwise.
+    """
+    status = e.response.status_code
+
+    if status == 429:
+        if attempt > max_retries:
+            raise RuntimeError('Rate limit exceeded after retries.') from e
+        wait = backoff_factor * (2 ** (attempt - 1))
+        print(f'WARNING. Error 429 (rate limit). Retrying in {wait}s...')
+        time.sleep(wait)
+        return True
+
+    if 500 <= status < 600:
+        if attempt > max_retries:
+            raise RuntimeError(f'Server error {status} after retries') from e
+        wait = backoff_factor * (2 ** (attempt - 1))
+        print(f'WARNING. Server error {status}. Retrying in {wait}s...')
+        time.sleep(wait)
+        return True
+
+    raise RuntimeError(f'HTTP error {status}: {e.response.text}') from e
+
 def send_chat_request(model: str, prompt: str, user_message: str, image_path: Optional[str] = None,
                         max_retries: int = 4, backoff_factor: float = 1.0) -> requests.Response:
     """
@@ -163,29 +190,13 @@ def send_chat_request(model: str, prompt: str, user_message: str, image_path: Op
             handle_rate_limit(response)
             return response
 
+        # Request reached the server, and the server responded but with an error code
         except requests.exceptions.HTTPError as e:
-            status = e.response.status_code
-
-            if status == 429:
-                attempt += 1
-                if attempt > max_retries:
-                    raise RuntimeError('Rate limit exceeded after retries.')
-                wait = backoff_factor * (2 ** (attempt - 1))
-                print(f'WARNING. Error 429 (rate limit). Retrying in {wait}s...')
-                time.sleep(wait)
+            attempt += 1
+            if handle_http_error(e, attempt, max_retries, backoff_factor):
                 continue
 
-            if 500 <= status < 600:
-                attempt += 1
-                if attempt > max_retries:
-                    raise RuntimeError(f'Server error {status} after retries')
-                wait = backoff_factor * (2 ** (attempt - 1))
-                print(f'WARNING. Server error {status}. Retrying in {wait}s...')
-                time.sleep(wait)
-                continue
-
-            raise RuntimeError(f'HTTP error {status}: {e.response.text}')
-
+        # Failed to establish connection to the server
         except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
             attempt += 1
             if attempt > max_retries:
@@ -195,7 +206,8 @@ def send_chat_request(model: str, prompt: str, user_message: str, image_path: Op
             time.sleep(wait)
             continue
 
-        except requests.exceptions.RequestException as e:   # Anything else
+        # Anything else
+        except requests.exceptions.RequestException as e:
             raise RuntimeError('Unexpected error communicating with API') from e
 
 def get_headers(system_response: requests.Response) -> Dict[str, int]:
