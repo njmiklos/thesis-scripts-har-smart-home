@@ -22,14 +22,11 @@ def get_api_config(model: str) -> Dict[str, str]:
         Dict[str, str]: A dictionary containing API key, base URL, and model name.
     """
     chat_ac_api_key, chat_ac_endpoint = get_chat_ac_info()
-
-    api_config = {
+    return {
         'api_key' : chat_ac_api_key,
         'base_url' : chat_ac_endpoint,
         'model' : model
     }
-
-    return api_config
 
 def detect_image_type(image_path: str) -> str:
     """
@@ -156,7 +153,7 @@ def send_chat_request(model: str, prompt: str, user_message: str, image_path: Op
     """
     api_config = get_api_config(model)
     headers = build_headers(api_config)
-    payload = build_payload(api_config['model'], prompt, user_message, image_path)
+    payload = build_payload(model, prompt, user_message, image_path)
     
     attempt = 0
     while True:
@@ -211,7 +208,7 @@ def send_chat_request(model: str, prompt: str, user_message: str, image_path: Op
             time.sleep(wait)
             continue
 
-        except requests.exceptions.RequestException as e:   # anything else from requests
+        except requests.exceptions.RequestException as e:   # Anything else
             raise RuntimeError('Unexpected error communicating with API') from e
 
 def get_headers(system_response: requests.Response) -> Dict[str, int]:
