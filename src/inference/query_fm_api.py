@@ -159,45 +159,32 @@ def send_chat_request(model: str, prompt: str, user_message: str, image_path: Op
     while True:
         try:
             response = requests.post(f'{api_config["base_url"]}/chat/completions', headers=headers, json=payload, timeout=120)
-            response.raise_for_status()  # raises HTTPError on 4xx/5xx
+            response.raise_for_status()
             handle_rate_limit(response)
             return response
 
         except requests.exceptions.HTTPError as e:
             status = e.response.status_code
 
-            # Rate limiting
             if status == 429:
                 attempt += 1
                 if attempt > max_retries:
-                    raise RuntimeError('Rate limit exceeded after retries')
+                    raise RuntimeError('Rate limit exceeded after retries.')
                 wait = backoff_factor * (2 ** (attempt - 1))
-                print(f'WARNING. 429 rate limit. Retrying in {wait}s...')
+                print(f'WARNING. Error 429 (rate limit). Retrying in {wait}s...')
                 time.sleep(wait)
                 continue
 
-            # Server errors: retry
             if 500 <= status < 600:
                 attempt += 1
                 if attempt > max_retries:
                     raise RuntimeError(f'Server error {status} after retries')
                 wait = backoff_factor * (2 ** (attempt - 1))
-                print(f'WARNING. Server error {status}; retrying in {wait}s...')
+                print(f'WARNING. Server error {status}. Retrying in {wait}s...')
                 time.sleep(wait)
                 continue
 
-            # Other client errors: no retry
-            if status == 400:
-                raise RuntimeError(f'Bad request (400): {e.response.text}')
-            if status == 401:
-                raise RuntimeError('Authentication failed (401)')
-            if status == 403:
-                raise RuntimeError('Permission denied (403)')
-            if status == 404:
-                raise RuntimeError('Endpoint not found (404)')
-
-            # fallback for any other HTTPError
-            raise
+            raise RuntimeError(f'HTTP error {status}: {e.response.text}')
 
         except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
             attempt += 1
@@ -326,20 +313,12 @@ def print_formatted_exchange(user_message: str, system_response: requests.Respon
     Args:
         user_message (str): User's input, i.e., message to the chatbot.
         system_response (requests.Response): The HTTP response object.
-
-    Raises:
-        ValueError: If the response is not OK (non-2xx status code).
     """
-    if system_response.ok:
-        if system_response.status_code != 200:
-            print(f'{system_response.status_code} {system_response.reason}')
+    print(f'User:\n- {user_message}')
+    print(f'System:\n- {get_system_message(system_response)}' )
+    print(f'Latency: {get_latency(system_response)}')
+    print_usage(system_response)
 
-        print(f'User:\n- {user_message}')
-        print(f'System:\n- {get_system_message(system_response)}' )
-        print(f'Latency: {get_latency(system_response)}')
-        print_usage(system_response)
-    else:
-        raise ValueError(f'Cannot access response details, response status code {system_response.status_code} {system_response.reason}.')
 
 if __name__ == '__main__':
     model = 'meta-llama-3.1-8b-instruct'
