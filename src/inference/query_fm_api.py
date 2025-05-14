@@ -1,8 +1,9 @@
 import requests
 import base64   # Used to encode images in base64 format for API transmission
 import mimetypes    # Used to detect the MIME type of an image based on its file extension
+import time
 
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 
 from utils.get_env import get_chat_ac_info
 
@@ -63,7 +64,80 @@ def encode_image_to_base64(image_path: str) -> str:
 
     return f'data:{mime_type};base64,{encoded}'
 
-def send_chat_request(model: str, prompt: str, user_message: str, image_path: Optional[str] = None) -> requests.Response:
+def build_headers(api_config: Dict[str, Any]) -> Dict[str, str]:
+    """
+    Builds the HTTP headers required for the API request.
+
+    Args:
+        api_config (Dict[str, Any]): Configuration dictionary containing the API key.
+
+    Returns:
+        Dict[str, str]: A dictionary of HTTP headers, including authorization and content type.
+    """
+    return {
+        'Authorization': f'Bearer {api_config["api_key"]}',
+        'Content-Type': 'application/json'
+    }
+
+def build_user_content(user_message: str, image_path: Optional[str]) -> Any:
+    """
+    Constructs the user content payload for the API, optionally including image data.
+
+    Args:
+        user_message (str): The textual message from the user.
+        image_path (Optional[str]): Optional path to an image to include in the message.
+
+    Returns:
+        Any: A string if no image is provided, otherwise a list of content blocks (text and image).
+    """
+    if image_path:
+        image_data = encode_image_to_base64(image_path)
+        return [
+            {'type': 'text', 'text': user_message},
+            {'type': 'image_url', 'image_url': {'url': image_data}}
+        ]
+    return user_message
+
+def build_payload(model: str, prompt: str, user_message: str, image_path: Optional[str]) -> Dict[str, Any]:
+    """
+    Assembles the full request payload including system prompt, user content, and model selection.
+
+    Args:
+        model (str): The model identifier for the chat completion.
+        prompt (str): The system prompt to steer the assistant's behavior.
+        user_message (str): The user's input message.
+        image_path (Optional[str]): Optional path to an image to include in the message.
+
+    Returns:
+        Dict[str, Any]: The complete JSON payload ready for the API request.
+    """
+    user_content = build_user_content(user_message, image_path)
+    return {
+        'model': model,
+        'messages': [
+            {'role': 'system', 'content': prompt},
+            {'role': 'user', 'content': user_content}
+        ]
+    }
+
+def handle_rate_limit(response: requests.Response) -> None:
+    """
+    Checks the response headers for rate limit status and sleeps if nearing exhaustion.
+
+    Args:
+        response (requests.Response): The HTTP response object containing rate limit headers.
+
+    Returns:
+        None
+    """
+    remaining = int(response.headers.get('RateLimit-Remaining', 1))
+    reset = int(response.headers.get('RateLimit-Reset', 1))
+    if remaining <= 2:
+        print(f'Approaching rate limit. Sleeping for {reset + 1} seconds...')
+        time.sleep(reset + 1)
+
+def send_chat_request(model: str, prompt: str, user_message: str, image_path: Optional[str] = None,
+                        max_retries: int = 4, backoff_factor: float = 1.0) -> requests.Response:
     """
     Sends a chat request to the API with optional image input.
 
@@ -74,47 +148,80 @@ def send_chat_request(model: str, prompt: str, user_message: str, image_path: Op
         prompt (str): The system prompt to set the behavior of the assistant.
         user_message (str): The user's query.
         image_path (Optional[str]): Optional image file path to include.
+        max_retries (int): Number of retry attempts.
+        backoff_factor (float): Base multiplier for exponential back-off.
 
     Returns:
         requests.Response: The HTTP response object from the API request.
     """
     api_config = get_api_config(model)
+    headers = build_headers(api_config)
+    payload = build_payload(api_config['model'], prompt, user_message, image_path)
+    
+    attempt = 0
+    while True:
+        try:
+            response = requests.post(f'{api_config["base_url"]}/chat/completions', headers=headers, json=payload, timeout=120)
+            response.raise_for_status()  # raises HTTPError on 4xx/5xx
+            handle_rate_limit(response)
+            return response
 
-    headers = {
-        'Authorization': f'Bearer {api_config["api_key"]}',
-        'Content-Type': 'application/json'
-    }
-    
-    if image_path:
-        image_data = encode_image_to_base64(image_path)
-        user_content = [
-            {'type': 'text', 'text': user_message},
-            {'type': 'image_url', 'image_url': {'url': image_data}}
-        ]
-    else:
-        user_content = user_message
+        except requests.exceptions.HTTPError as e:
+            status = e.response.status_code
 
-    payload = {
-        'model': api_config['model'],
-        'messages': [
-            {'role': 'system', 'content': prompt},
-            {'role': 'user', 'content': user_content}
-        ]
-    }
-    
-    system_response = requests.post(
-        url=f'{api_config["base_url"]}/chat/completions',
-        headers=headers,
-        json=payload
-    )
-    
-    return system_response
+            # Rate limiting
+            if status == 429:
+                attempt += 1
+                if attempt > max_retries:
+                    raise RuntimeError('Rate limit exceeded after retries')
+                wait = backoff_factor * (2 ** (attempt - 1))
+                print(f'WARNING. 429 rate limit. Retrying in {wait}s...')
+                time.sleep(wait)
+                continue
+
+            # Server errors: retry
+            if 500 <= status < 600:
+                attempt += 1
+                if attempt > max_retries:
+                    raise RuntimeError(f'Server error {status} after retries')
+                wait = backoff_factor * (2 ** (attempt - 1))
+                print(f'WARNING. Server error {status}; retrying in {wait}s...')
+                time.sleep(wait)
+                continue
+
+            # Other client errors: no retry
+            if status == 400:
+                raise RuntimeError(f'Bad request (400): {e.response.text}')
+            if status == 401:
+                raise RuntimeError('Authentication failed (401)')
+            if status == 403:
+                raise RuntimeError('Permission denied (403)')
+            if status == 404:
+                raise RuntimeError('Endpoint not found (404)')
+
+            # fallback for any other HTTPError
+            raise
+
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
+            attempt += 1
+            if attempt > max_retries:
+                raise RuntimeError('Network failure after retries') from e
+            wait = backoff_factor * (2 ** (attempt - 1))
+            print(f'WARNING. Network error. Retrying in {wait}s...')
+            time.sleep(wait)
+            continue
+
+        except requests.exceptions.RequestException as e:   # anything else from requests
+            raise RuntimeError('Unexpected error communicating with API') from e
 
 def get_headers(system_response: requests.Response) -> Dict[str, int]:
     """
     Extracts the headers of the API response.
 
     Args:
+        system_response (requests.Response): The HTTP response object.
+
+    Returns:
         Dict[str, int]: A dictionary containing headers.
     """
     headers = {}
