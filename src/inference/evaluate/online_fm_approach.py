@@ -60,7 +60,7 @@ class ResultsFM(ClassificationResults):
             print(f'Did not find annotation in data, saving as \"other\". Data content: {data}')
             return 'other'
         if len(found_annotations) > 1:
-            print(f'Found more than 1 annotation in data, saving the last one. Data content: {data}')
+            print(f'Found more than 1 annotation in data: {found_annotations}, saving the last one: {found_annotations[-1]}. Data content: {data}')
         return found_annotations[-1]
 
     def update(self, windows: List['ExtendedWindow'], annotations_file: Path) -> None:
