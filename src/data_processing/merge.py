@@ -6,7 +6,7 @@ from typing import Optional
 
 from utils.file_handler import get_all_csv_files_in_directory, read_csv_to_dataframe, save_dataframe_to_csv
 from utils.get_env import get_path_from_env
-from data_analysis.summarize.summarize_classes import prefix_column_names_with_device_sensor_function
+from data_analysis.summarize_classes import prefix_column_names_with_device_sensor_function
 from data_processing.convert_timestamps import (convert_timestamps_from_miliseconds_to_localized_datetime, 
                                                 convert_timestamps_from_localized_datetime_to_miliseconds)
 
