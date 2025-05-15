@@ -4,8 +4,9 @@ from pathlib import Path
 from typing import List, Tuple, Optional
 
 from utils.get_env import get_path_from_env
+from utils.file_handler import (read_csv_to_dataframe, save_dataframe_to_csv, 
+                                get_all_csv_files_in_directory, check_if_directory_exists)
 from data_processing.infer.sensor_metadata import infer_unit
-from utils.file_handler import read_csv_to_dataframe, save_dataframe_to_csv, get_all_csv_files_in_directory
 from data_analysis.report_utils import get_quick_stats_dict, get_root_mean_square_error_srs
 from data_analysis.visualize.utils import generate_histogram, generate_scatter_plot, generate_comparative_scatterplots
 
@@ -332,14 +333,6 @@ def add_column_to_table_summary(og_dataset_file_paths: List[Path], mod_dataset_f
     summary_df = summary_df.reset_index()
     summary_df = summary_df.rename(columns={'index': 'Measurement'})
     save_summary(summary_df, output_path / 'Analysis', modification)
-
-def check_if_directory_exists(directory: Path) -> None:
-    """
-    Makes sure the specified directory exists.
-    """
-    if not directory.exists() or not directory.is_dir():
-        directory.mkdir(parents=True, exist_ok=True)
-        print(f'Required directory was missing, created {directory}.')
 
 
 if __name__ == "__main__":

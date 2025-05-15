@@ -119,3 +119,16 @@ def save_to_json_file(output_dir_path: Path, dictionary: dict, output_file_name:
         json.dump(dictionary, f, indent=4)
     
     print(f'Saved {output_path}.')
+
+def check_if_directory_exists(directory: Path) -> None:
+    """
+    Makes sure the specified directory exists, creates it if it does not.
+
+    directory (Path): The directory path to be checked.
+
+    Returns:
+        None
+    """
+    if not directory.exists():
+        directory.mkdir(parents=True, exist_ok=True)
+        print(f'Required directory was missing, created {directory}.')
