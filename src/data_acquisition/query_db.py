@@ -1,10 +1,17 @@
+"""
+This script provides utilities to query sensor data from a running InfluxDB instance and save it to a CSV file.
+
+It is designed for use in projects involving a specific sensor kit at TU Chemnitz. The script includes functions 
+to formulate queries, retrieve data, convert timestamps, and persist the results. When run directly, it executes 
+a query for a specified device and measurement and writes the results to a CSV file.
+"""
 import pandas as pd
 from influxdb import InfluxDBClient
 from typing import Any
 
 from data_processing.convert_timestamps import convert_timestamps_from_iso8601_to_localized_datetime
 from utils.get_env import get_path_from_env, get_database_info
-from utils.file_handler import save_dataframe_to_csv
+from utils.file_handler import save_dataframe_to_csv, check_if_directory_exists
 
 
 def query_data(query: str) -> Any:
@@ -88,15 +95,17 @@ def formulate_query(device_no: str, measurement: str, values_col: str, ts_start:
 
 
 if __name__ == '__main__':
-    base_path = get_path_from_env('BASE_PATH')
+    outputs_dir = get_path_from_env('OUTPUTS_PATH')
 
     # Set before running
     device_no = '1'
     measurement = 'accelerometer'
     values_col = 'x'
 
-    path_output_file = base_path / f'd{device_no}_{measurement}.csv'
+    check_if_directory_exists(outputs_dir)
+    output_filename = f'd{device_no}_{measurement}.csv'
+    output_file_path = outputs_dir / output_filename
     query = formulate_query(device_no, measurement, values_col)
     df = get_query_result(query)
 
-    save_dataframe_to_csv(df, path_output_file)
+    save_dataframe_to_csv(df, output_file_path)
