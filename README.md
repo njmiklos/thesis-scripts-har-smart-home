@@ -27,7 +27,9 @@ This repository covers working with timeseries sensor data in preparation for a 
 - 🤖 Inference: Predicting annotations for sensor data with deep learning and foundation models, and evaluating their quality against true annotations.
 - 🗃️ Utils: Generic functions for handling files, logging, setting up the working evironment for the project.
 # 🛠️ Usage Instructions
-## 1. Install Dependencies
+## 1. Download the Repository
+- Follow the [GitHub documentation](https://docs.github.com/en/get-started/start-your-journey/downloading-files-from-github)
+## 2. Install Dependencies
 There are a couple of libraries used in this project. You'll need them to run the scripts. 
 1. Make sure you have Python installed with `python --version` or `python3 --version` for higher versions. If no specific version is shown, e.g., `Python 3.10.12`, you need to install Python.
 2. a. Optional, recommended: Create a virtual environment.  
@@ -39,7 +41,7 @@ If you're not familiar with virtual environments, here's a quick guide: A virtua
 4. Navigate to the project's root directory: `cd thesis-scripts-har-smart-home`.
 5. Install all required packages: `pip install -r requirements.txt`.
 6. Optional, recommended: Verify the installation by listing all packages within the virtual environment: `pip list`. The list should match the content of `requirements.txt`.
-## 2. Create an .env File
+## 3. Create an .env File
 To run the scripts, you must create a .env file with environment variables for paths and database credentials. The .env file is not included in this repository to protect privacy and security.
 ### .env File Example
 ```
@@ -70,7 +72,7 @@ CHAT_AC_ENDPOINT='https://chat-ai.academiccloud.de/yourEndpoint'
 - `MODEL_PATH`: Path to an Edge Impulse model file (`*.eim`).
 - My database engine is InfluxDB (version 1.x). The API requires `HOST`, `PORT`, and `DATABASE_NAME`.
 - I used the [Chat Academic Cloud API](https://docs.hpc.gwdg.de/services/saia/index.html) when working with Foundation Models. I needed an API key `CHAT_AC_API_KEY` and an endpoint address `CHAT_AC_ENDPOINT`.
-## 3. Run Scripts
+## 4. Run Scripts
 >⚠️ **Note:** If you work with a virtual environment, make sure that it is active.
 1. Write your own `main.py` and import necessary scripts or adjust an existing main code accordingly. You can add or remove variables in the *.env file and use them instead of fixed paths in the scripts.
 2. Set your working directory to `thesis-scripts-har-smart-home/src`
@@ -87,26 +89,27 @@ _Example_: If I wanted to run `src/inference/classify_with_ei_model.py`, I would
     - Collect Sensor Data: Install sensors in a household and collect data over time. Record the timestamps and descriptions of activities of interest.
     - Create an Annotation File: List all annotated activity episodes and validate the format using `data_acquisition/validate_annotation_file.py` to ensure compatibility of the file with other scripts.
     - Download Sensor Data: Retrieve data from your InfluxDB instance and export it to `.csv` files using `data_acquisition/query_db.py`.
-2. Initial Data Exploration: Use scripts from the `data_analysis` directory to inspect your annotated data. Generate summaries and plots to check for sensor errors (e.g., malfunctions or dropouts), duplicates, missing or infinite values. Address issues early before further processing.
-3. Data Cleaning: 
+2. Follow the section "Usage Instructions".
+3. Initial Data Exploration: Use scripts from the `data_analysis` directory to inspect your annotated data. Generate summaries and plots to check for sensor errors (e.g., malfunctions or dropouts), duplicates, missing or infinite values. Address issues early before further processing.
+4. Data Cleaning: 
     - Resample Data: Standardize sampling rates using `data_processing/resample.py`, especially useful if sensors missed intervals due to connectivity issues.
     - Denoise Data: Remove outliers and faulty sensor readings using `data_processing/denoise.py`.
     - Synchronize Data: Align start and end times of all sensor recordings using `data_processing/synchronize.py`.
     - Annotate Data: Add annotations as a new column using `data_processing/annotate.py`.
-4. Data Exploration: Re-analyze your data post-cleaning to ensure no new issues have been introduced. Use scripts in `data_analysis` to visualize or summarize.
-5. Data Correlation:Discover relationships between sensor readings with `data_analysis/correlate_features.py`, and visualize them using tools in `data_analysis/visualize`.
-6. Data Filtering: Reduce redundancy by removing irrelevant or highly similar features. Use `data_processing/filter.py` to retain only meaningful data for training.
-7. Data Segmentation & Balancing with `data_processing/segment.py`:
+5. Data Exploration: Re-analyze your data post-cleaning to ensure no new issues have been introduced. Use scripts in `data_analysis` to visualize or summarize.
+6. Data Correlation:Discover relationships between sensor readings with `data_analysis/correlate_features.py`, and visualize them using tools in `data_analysis/visualize`.
+7. Data Filtering: Reduce redundancy by removing irrelevant or highly similar features. Use `data_processing/filter.py` to retain only meaningful data for training.
+8. Data Segmentation & Balancing with `data_processing/segment.py`:
     - Segment Data: Split time series into meaningful segments (e.g., per day or per activity).
     - Balance Classes: Adjust for imbalanced distributions (e.g., too many 'sleeping', not enough 'cooking' samples).
-8. Data Representation
+9. Data Representation
     - Add hand-crafted time-based features using `data_processing/add_time_features.py`.
     - Transform your data completely by generating summary representations using `data_processing/compress.py`.
-9. Test Deep Learning or Foundation Models: Use scripts in `inference` to:
+10. Test Deep Learning or Foundation Models: Use scripts in `inference` to:
     - Run inference with a local deep learning model or a foundation model via API.
     - Measure processing time and memory usage.
     - Save predictions for evaluation.
-10. Evaluate Results: Compare model predictions with true annotations using scripts in `data_analysis/visualize.py`. Generate visualizations to assess model quality.
+11. Evaluate Results: Compare model predictions with true annotations using scripts in `data_analysis/visualize.py`. Generate visualizations to assess model quality.
 # 💡 Notes & Philosophy
 This code is structured based on my thesis needs (e.g., sensor types, locations, sampling rates), so it may not be plug-and-play for others. Full project details will be in my thesis.
 # 🛡️ License
