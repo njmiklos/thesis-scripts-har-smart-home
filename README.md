@@ -3,18 +3,15 @@
 This repository contains the code I am developing for my MA thesis on Human Activity Recognition (HAR) using smart home data.
 ## 🚧 Status: Work in Progress (WIP)
 Better organization of files and descriptions are coming soon!
-## 📂 What's Inside
-This repository covers working with timeseries sensor data in preparation for a model training, including:
-- 📡 Data Acquisition: Communicating with a local InfluxDB instance to collect and save sensor data to .csv files.
-- 🧹 Data Processing: Transforming, resampling, denoising, synchronizing, and merging timeseries sensor data.
-- 📊 Data Analysis & Visualization: Generating statistical summaries based on annotated episodes, creating scatter plots, timeseries graphs, and histograms from sensor readings.
-- 🏷️ Data Annotation: Annotating sensor data using predefined episodes.
-- 📁 File Management: Splitting timeseries data into daily or episodic segments.
 ## 📝 Project Structure
 ```
 📂 thesis-scripts-har-smart-home/
-├── 📁 src/               # Python scripts
-│   └── ...      
+├── 📁 src/               # Python scripts. Their purpose is explained in the docstring at the top of every file.
+|   ├── 📁 data_acqusition/
+|   ├── 📁 data_analysis/
+|   ├── 📁 data_processing/
+|   ├── 📁 inference/
+│   └── 📁 utils/
 ├── 📁 inputs/            # Inputs to be processed or helping in processing (.gitignored)
 ├── 📁 outputs/           # Placed for processed files (.gitignored)
 ├── 📄 .env               # Environment variables (.gitignored)
@@ -22,6 +19,13 @@ This repository covers working with timeseries sensor data in preparation for a 
 ├── 📄 README.md          # Project documentation (you are here! Hi!)
 └── 📄 requirements.txt   # List of dependencies
 ```
+## 📂 What's Inside `src` Directories
+This repository covers working with timeseries sensor data in preparation for a model training, including:
+- 📡 Data Acquisition: Communicating with a local InfluxDB instance to collect and save sensor data to .csv files, parsing a file listing annotated acitvity episodes.
+- 📊 Data Analysis: Generating statistical summaries based on annotated episodes, creating scatter plots, timeseries graphs, and histograms from sensor readings, correlating features, combining plots into grids.
+- 🧹 Data Processing: Transforming, resampling, denoising, segmenting, synchronizing, and merging timeseries sensor data, annotating sensor data.
+- 🤖 Inference: Predicting annotations for sensor data with deep learning and foundation models, and evaluating their quality against true annotations.
+- 🗃️ Utils: Generic functions for handling files, logging, setting up the working evironment for the project.
 # 🛠️ Usage Instructions
 ## 1. Install Dependencies
 There are a couple of libraries used in this project. You'll need them to run the scripts. 
@@ -78,21 +82,31 @@ Run: `python3 -m subdirectory.module-name`.
 - For top-level scripts (placed directly in `src/`), there is no subdirectory, so simply run: `python3 -m module-name`.
 - If you want to run a script that uses an Edge Impulse model, you need to make the model file executable first: `chmod +x '/your-path/to-model/model-file-name-os-architecture-version.eim'`.  
 _Example_: If I wanted to run `src/inference/classify_with_ei_model.py`, I would run: `python3 -m inference.classify_with_ei_model`.
-# 🚀 Example Pipeline (WIP, TODO)
+# 🚀 Example Pipeline
 1. Data Collection:
-    - Create an Annotation File: List all annotated episodes and parse them using `parse_annotation_file.py` to ensure compatibility with other scripts.
-    - Download Sensor Data: Retrieve data from your InfluxDB instance and export it to .csv files using scripts in the `databank_communication` directory.
-2. Initial Data Exploration: Inspect your annotated data using `explore_data_pandas.py`, `visualize_data.py`, `summarize_classes.py`. Look for errors (e.g., sensor malfunctions), duplicates (e.g., multiple logs of the same event), missing or infinite values.
+    - Collect Sensor Data: Install sensors in a household and collect data over time. Record the timestamps and descriptions of activities of interest.
+    - Create an Annotation File: List all annotated activity episodes and validate the format using `data_acquisition/validate_annotation_file.py` to ensure compatibility of the file with other scripts.
+    - Download Sensor Data: Retrieve data from your InfluxDB instance and export it to `.csv` files using `data_acquisition/query_db.py`.
+2. Initial Data Exploration: Use scripts from the `data_analysis` directory to inspect your annotated data. Generate summaries and plots to check for sensor errors (e.g., malfunctions or dropouts), duplicates, missing or infinite values. Address issues early before further processing.
 3. Data Cleaning: 
-    - Resample Data: Standardize sampling rates with `resample_df.py`. Sensors may have missed intervals (e.g., due to connection drops).
-    - Denoise Data: Remove outliers from faulty sensor readings using `denoise_data.py`.
-    - Synchronize Data: Align start and end times of all sensor recordings using `synchronize_data.py`.
-4. Data Exploration: Re-examine your data to ensure cleaning hasn't introduced errors with `explore_data_pandas.py`, `visualize_data.py`, `summarize_classes.py`. If you see that the fridge opened at 3 AM, question your assumptions about the culprit. Is this a data issue or a sneaky partner? (Probably the data!)
-5. Data Correlation: Identify relationships between sensor readings to uncover patterns. Use: `visualize_data.py`.
-6. Data Filtering: Reduce redundancy by removing highly similar or irrelevant data to retain only meaningful features for model training. Use `filter_df.py`.
-7. Data Segmentation & Balancing with `separate_into_episodes.py`
-    - Segment Data: Split timeseries into episodes, e.g., daily or activity-based segments.
-    - Balance Classes: Adjust for imbalanced activity distributions (e.g., too many ‘sleeping' episodes, not enough ‘cooking').
+    - Resample Data: Standardize sampling rates using `data_processing/resample.py`, especially useful if sensors missed intervals due to connectivity issues.
+    - Denoise Data: Remove outliers and faulty sensor readings using `data_processing/denoise.py`.
+    - Synchronize Data: Align start and end times of all sensor recordings using `data_processing/synchronize.py`.
+    - Annotate Data: Add annotations as a new column using `data_processing/annotate.py`.
+4. Data Exploration: Re-analyze your data post-cleaning to ensure no new issues have been introduced. Use scripts in `data_analysis` to visualize or summarize.
+5. Data Correlation:Discover relationships between sensor readings with `data_analysis/correlate_features.py`, and visualize them using tools in `data_analysis/visualize`.
+6. Data Filtering: Reduce redundancy by removing irrelevant or highly similar features. Use `data_processing/filter.py` to retain only meaningful data for training.
+7. Data Segmentation & Balancing with `data_processing/segment.py`:
+    - Segment Data: Split time series into meaningful segments (e.g., per day or per activity).
+    - Balance Classes: Adjust for imbalanced distributions (e.g., too many 'sleeping', not enough 'cooking' samples).
+8. Data Representation
+    - Add hand-crafted time-based features using `data_processing/add_time_features.py`.
+    - Transform your data completely by generating summary representations using `data_processing/compress.py`.
+9. Test Deep Learning or Foundation Models: Use scripts in `inference` to:
+    - Run inference with a local deep learning model or a foundation model via API.
+    - Measure processing time and memory usage.
+    - Save predictions for evaluation.
+10. Evaluate Results: Compare model predictions with true annotations using scripts in `data_analysis/visualize.py`. Generate visualizations to assess model quality.
 # 💡 Notes & Philosophy
 This code is structured based on my thesis needs (e.g., sensor types, locations, sampling rates), so it may not be plug-and-play for others. Full project details will be in my thesis.
 # 🛡️ License
