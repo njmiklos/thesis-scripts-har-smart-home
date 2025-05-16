@@ -1,3 +1,12 @@
+"""
+This script annotates time-series sensor data based on intervals specified in the annotation file.
+
+Environment Configuration:
+- Set `INPUTS_PATH`, `OUTPUTS_PATH`, and `ANNOTATIONS_FILE_PATH` in your `.env` file.
+- The annotations file must include `start`, `end`, and `annotation` columns indicating labeled time intervals.
+- Each input CSV must contain a `time` column in milliseconds for annotation matching.
+- Refer to `README.md` for full setup, usage instructions, and formatting requirements.
+"""
 import pandas as pd
 from pathlib import Path
 
@@ -45,7 +54,7 @@ def insert_annotations(df: pd.DataFrame, annotations: pd.DataFrame) -> pd.DataFr
 
     return df
 
-def process_data_files(path_dataset: Path, path_output_dataset: Path, path_annotation_file: Path) -> None:
+def annotate_data_files(path_dataset: Path, path_output_dataset: Path, path_annotation_file: Path) -> None:
     """
     Processes all CSV files in the given dataset path, annotates them, 
     and saves them with a new file name.
@@ -76,11 +85,8 @@ def process_data_files(path_dataset: Path, path_output_dataset: Path, path_annot
 if __name__ == '__main__':
     input_dir_path = get_path_from_env('INPUTS_PATH')
     output_dir_path = get_path_from_env('OUTPUTS_PATH')
+    path_annotation_file = get_path_from_env('ANNOTATIONS_FILE_PATH')
     check_if_directory_exists(output_dir_path)
 
-    path_annotation_file = input_dir_path / 'annotations_combined.csv'
-    path_dataset = input_dir_path / 'files_to_annotate'
-
-    process_data_files(path_dataset, output_dir_path, path_annotation_file)
+    annotate_data_files(input_dir_path, output_dir_path, path_annotation_file)
     print('Done.')
-

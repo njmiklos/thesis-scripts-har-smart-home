@@ -1,7 +1,7 @@
 from utils.file_handler import save_dataframe_to_csv
 from utils.get_env import get_path_from_env
 
-from data_processing.merge import merge_synchronized_files_into_single_df
+from data_processing.merge import merge_files_on_time
 from data_analysis.visualize.utils import generate_heatmap
 
 
@@ -13,7 +13,7 @@ if __name__ == '__main__':
     output_database_path = input_dataset_path / 'output'
     output_file = 'synchronized_merged.csv'
 
-    df = merge_synchronized_files_into_single_df(input_dataset_path, skip_unannotated=False)
+    df = merge_files_on_time(input_dataset_path, skip_unannotated=False)
 
     if not df.empty:
         success = generate_heatmap(df, output_database_path, 'Correlation Heatmap of All Features Synchronized to 1s')

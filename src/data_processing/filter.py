@@ -1,3 +1,7 @@
+"""
+This script provides utility functions for filtering, cleaning time-series sensor data based on date, 
+time, timestamp ranges, and annotations.
+"""
 import pandas as pd
 
 from typing import Set, List

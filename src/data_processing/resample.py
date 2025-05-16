@@ -1,10 +1,19 @@
+"""
+This script resamples time-series sensor data to uniform intervals using various gap-filling strategies 
+(interpolation, forward-fill, backward-fill, mean, min, or constant values).
+
+Environment Configuration:
+- Set `INPUTS_PATH` and `OUTPUTS_PATH` in your `.env` file.
+- Refer to `README.md` for full setup and usage instructions.
+"""
 import pandas as pd
 import time
 
 from pathlib import Path
 
-from data_processing.convert_timestamps import convert_timestamps_from_miliseconds_to_localized_datetime, convert_timestamps_from_localized_datetime_to_miliseconds
-from utils.file_handler import (read_csv_to_dataframe, save_dataframe_to_csv, get_all_csv_files_in_directory)
+from data_processing.convert_timestamps import (convert_timestamps_from_miliseconds_to_localized_datetime, 
+                                                convert_timestamps_from_localized_datetime_to_miliseconds)
+from utils.file_handler import (save_dataframe_to_csv, get_all_csv_files_in_directory, check_if_directory_exists)
 from utils.get_env import get_path_from_env
 from data_processing.infer.sensor_metadata import infer_precision, infer_expected_sampling_rate
 
@@ -123,15 +132,18 @@ def resample_to_even_intervals(df: pd.DataFrame, sampling_rate: float, method: s
     
     return df_resampled
 
-def process_file_in_batches(file_path: Path, output_path: Path, sampling_rate: float, chunk_size: int, method: str, const: int) -> None:
+def process_file_in_batches(file_path: Path, output_path: Path, sampling_rate: float, 
+                            chunk_size: int, method: str, const: int) -> None:
     """
     Processes a large CSV file in chunks to improve memory efficiency.
 
     Parameters:
         file_path (str): Path to the input CSV file.
         output_path (str): Path to save the processed output CSV file.
+        sampling_rate (float): Desired resampling interval (e.g., '100ms', '1s').
         chunk_size (int): Number of rows to process at a time.
         method (str): Resampling method ('interpolate', 'mean', 'min', 'ffill', 'bfill', 'const').
+        const (int): If method 'const' is selected, an integer to fill in missing values with.
     """
     chunks = pd.read_csv(file_path, chunksize=chunk_size)
     processed_chunks = []
@@ -147,19 +159,21 @@ def process_file_in_batches(file_path: Path, output_path: Path, sampling_rate: f
     save_dataframe_to_csv(final_df, output_path)
     print(f'Processed and saved: {output_path}')
 
-if __name__ == '__main__':
-    base_path = get_path_from_env('BASE_PATH')
+def resample_files(input_dir: Path, output_dir: Path, method: str, const: int, chunk_size: int, 
+                  manual_sampling_rate: bool, sampling_rate: float) -> None:
+    """
+    Resamples CSV files.
 
-    # Change before running
-    dataset_path = base_path / 'Raw_relevant'
-    method = 'const'
-    constant = 0
-    chunk_size = 2000
-    manual_sampling_rate = True
-    sampling_rate = 1   # 1s
-
-    resampled_dataset_path = base_path / f'Sync_ready'
-    files = get_all_csv_files_in_directory(dataset_path)
+    Args:
+        input_dir_path (Path): The directory where the CSV files to be resampled are.
+        output_path (Path): The directory where the resampled CSV files will be saved.
+        method (str): Resampling method ('interpolate', 'mean', 'min', 'ffill', 'bfill', 'const').
+        const (int): If method 'const' is selected, an integer to fill in missing values with.
+        chunk_size (int): Number of rows to process at a time.
+        sampling_rate (float): Desired resampling interval (e.g., '100ms', '1s').
+        manual_sampling_rate (bool): If not set to True, sampling rate will be inffered.
+    """
+    files = get_all_csv_files_in_directory(input_dir)
     no_files = len(files)
     start_ts = time.time()
 
@@ -168,15 +182,13 @@ if __name__ == '__main__':
         filename = file.name
         print(f'Processing file {counter}/{no_files} {filename}...')
 
-        df = read_csv_to_dataframe(file)
-
         if not manual_sampling_rate:
             sampling_rate = infer_expected_sampling_rate(filename)
         if sampling_rate >= 0:
             print(f'INFO: Setting sampling rate to {sampling_rate}s for {filename}.')
             if chunk_size >= 0:
-                file_out = resampled_dataset_path / filename
-                process_file_in_batches(file, file_out, sampling_rate, chunk_size, method, constant)
+                file_out = output_dir / filename
+                process_file_in_batches(file, file_out, sampling_rate, chunk_size, method, const)
             else:
                 print(f'WARNING: Invalid chunk size, skipping.')
         else:
@@ -186,3 +198,18 @@ if __name__ == '__main__':
     end_ts = time.time()
     total_t = end_ts - start_ts
     print(f'The process took {total_t:.6f} seconds.')
+
+
+if __name__ == '__main__':
+    # Change before running
+    method = 'const'
+    constant = 0
+    chunk_size = 2000
+    set_sampling_rate_manually = True
+    sampling_rate = 1   # 1s
+
+    input_dir = get_path_from_env('INPUTS_PATH')
+    output_dir = get_path_from_env('OUTPUTS_PATH')
+    check_if_directory_exists(output_dir)
+
+    resample_files(input_dir, output_dir, method, constant, chunk_size, set_sampling_rate_manually, sampling_rate)

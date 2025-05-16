@@ -1,14 +1,20 @@
 """
-Compresses raw sensor data into a textual summary that higlights changes in sensor data.
-"""
+This script compresses raw time-series sensor data into compact, human-readable summaries 
+that highlight meaningful changes in sensor measurements. It reduces verbosity by eliminating 
+consecutive duplicate readings.
 
+Environment Configuration:
+- Set `INPUTS_PATH` and `OUTPUTS_PATH` in your `.env` file to define input and output directories.
+- Input files must be CSVs containing sensor data with a `time` column in milliseconds.
+- Refer to `README.md` for full setup and usage instructions.
+"""
 import pandas as pd
 
 from pathlib import Path
 from typing import List, Tuple
 
 from utils.get_env import get_path_from_env
-from utils.file_handler import read_csv_to_dataframe, get_all_csv_files_in_directory
+from utils.file_handler import read_csv_to_dataframe, get_all_csv_files_in_directory, check_if_directory_exists
 from data_processing.convert_timestamps import convert_timestamps_from_miliseconds_to_localized_datetime_srs
 
 
@@ -149,7 +155,7 @@ def write_to_text_file(output_path: Path, text: str):
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(text)
 
-def process_files(input_dir: Path, output_dir: Path) -> None:
+def compress_dataset_files(input_dir: Path, output_dir: Path) -> None:
     """
     Processes all CSV files in the input directory by generating summaries
     and writing them to corresponding text files in the output directory.
@@ -171,6 +177,6 @@ def process_files(input_dir: Path, output_dir: Path) -> None:
 if __name__ == '__main__':
     input_path = get_path_from_env('INPUTS_PATH')
     output_path = get_path_from_env('OUTPUTS_PATH')
-    output_path.mkdir(parents=True, exist_ok=True)
+    check_if_directory_exists(output_path)
 
-    process_files(input_path, output_path)
+    compress_dataset_files(input_path, output_path)

@@ -1,12 +1,17 @@
+"""
+This module provides utilities for converting between different timestamp formats 
+(ISO8601, Unix milliseconds, nanoseconds) and timezones (UTC and Europe/Berlin). 
+It supports both `DataFrame` and `Series` transformations to accommodate flexible 
+time-series processing pipelines.
+
+Timezone Handling Notes:
+- `tz_localize` is used when working with timestamps that are stored without timezone information 
+  (e.g., Unix milliseconds or naive strings).
+- `tz_convert` is used when the timestamps already have timezone information but need to be shifted 
+  to another timezone (e.g., UTC to Europe/Berlin or vice versa).
+"""
 import pandas as pd
 
-
-"""
-- tz_localize is used when working with timestamps that are stored without timezone information 
-(e.g., Unix milliseconds or naive strings).
-- tz_convert is used when the timestamps already have timezone information but need to be shifted 
-to another timezone (e.g., UTC to Europe/Berlin or vice versa).
-"""
 
 def convert_timestamps_from_iso8601_to_localized_datetime(df: pd.DataFrame, time_col: str) -> pd.DataFrame:
     """

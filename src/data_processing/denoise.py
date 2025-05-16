@@ -1,7 +1,17 @@
+"""
+This script denoises time-series sensor data by applying a Simple Moving Average (SMA) to each column 
+(excluding timestamps). It supports chunked processing for memory efficiency and can clip extreme values 
+based on statistical thresholds.
+
+Environment Configuration:
+- Set `INPUTS_PATH` and `OUTPUTS_PATH` in your `.env` file to specify input and output directories.
+- Configure `window_size_ambient_data`, `window_size_motion_data`, and `chunk_size` as needed.
+- Refer to `README.md` for full setup and usage instructions.
+"""
 import pandas as pd
 from pathlib import Path
 
-from utils.file_handler import get_all_csv_files_in_directory, save_dataframe_to_csv
+from utils.file_handler import get_all_csv_files_in_directory, save_dataframe_to_csv, check_if_directory_exists
 from utils.get_env import get_path_from_env
 from data_processing.infer.sensor_metadata import infer_precision
 from data_analysis.report_utils import calculate_thresholds
@@ -60,12 +70,13 @@ def set_window_size(file_path: Path, window_motion: int, window_ambient: int):
         window = window_ambient
     return window
 
-def process_file_in_chunks(file_path: Path, window: int, chunk_size=2000):
+def process_file_in_chunks(file_path: Path, output_dir: Path, window: int, chunk_size=2000):
     """
     Processes a CSV file in chunks, applies smoothing, and saves the denoised data.
 
     Parameters:
     - file_path (Path): Path to the CSV file to be processed.
+    - output_path (Path): The directory where the denoised CSV files will be saved.
     - window (int): Window size for the smoothing function.
     - chunk_size (int, optional): Number of rows per chunk. Default is 2000.
 
@@ -88,29 +99,45 @@ def process_file_in_chunks(file_path: Path, window: int, chunk_size=2000):
 
         dnsn_df = pd.concat(processed_chunks, ignore_index=True)
 
-        file_dnsn_path = dataset_dnsd_path / file_path.name
+        file_dnsn_path = output_dir / file_path.name
         save_dataframe_to_csv(dnsn_df, file_dnsn_path)
         print(f'INFO: Saved denoised file: {file_dnsn_path}')
     
     except Exception as e:
         print(f'ERROR: Failed to process {file_path}. Reason: {e}')
 
+def denoise_files(input_dir: Path, output_dir: Path, window_size_ambient_data: int, window_size_motion_data: int, 
+                  chunk_size=2000) -> None:
+    """
+    Denoises CSV files.
 
-if __name__ == '__main__':
-    base_path = get_path_from_env('BASE_PATH')
+    Args:
+        input_dir_path (Path): The directory where the CSV files to be denoised are.
+        output_path (Path): The directory where the denoised CSV files will be saved.
+        window_size_ambient_data, window_size_motion_data (int): Window size for the smoothing function.
+            The correct size is inffered from the data type provided.
+        chunk_size (int, optional): Number of rows per chunk. Default is 2000.
 
-    # Set before running
-    dataset_org_path = base_path / f'Raw_relevant_resampled_0'
-    dataset_dnsd_path = base_path / f'Raw_relevant_resampled_0_denoised_window_5'
-    window_size_motion_data = 5
-    window_size_ambient_data = 5
-    chunk_size = 2000
-
-    files = get_all_csv_files_in_directory(dataset_org_path)
+    Returns:
+        None
+    """
+    files = get_all_csv_files_in_directory(input_dir)
     no_files = len(files)
     counter = 1
     for file in files:
         print(f'INFO: Processing {counter}/{no_files} {file}...')
         window = set_window_size(file, window_size_motion_data, window_size_ambient_data)
-        process_file_in_chunks(file, window, chunk_size)
+        process_file_in_chunks(file, output_dir, window, chunk_size)
         counter = counter + 1
+
+
+if __name__ == '__main__':
+    window_size_motion_data = 5
+    window_size_ambient_data = 5
+    chunk_size = 2000
+
+    input_dir = get_path_from_env('INPUTS_PATH')
+    output_dir = get_path_from_env('OUTPUTS_PATH')
+    check_if_directory_exists(output_dir)
+
+    denoise_files(input_dir, output_dir, window_size_ambient_data, window_size_motion_data, chunk_size)

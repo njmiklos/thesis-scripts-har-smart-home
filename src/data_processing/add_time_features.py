@@ -1,9 +1,21 @@
+"""
+This script adds temporal features derived from timestamp values to the data. It transforms raw `time` columns 
+into informative fields such as day, month, weekday, hour, time of day (morning/afternoon/evening/night), 
+and cyclical representations using sine and cosine transforms.
+
+Environment Configuration:
+- Set `INPUTS_PATH` and `OUTPUTS_PATH` in your `.env` file to define input and output directories.
+- Input files must be CSVs containing a `time` column with timestamps in milliseconds.
+- Temporal features are applied to both training and testing subdirectories (if present).
+- Refer to `README.md` for full setup, usage instructions, and formatting requirements.
+"""
 import pandas as pd
 import numpy as np
 from pathlib import Path
 
 from utils.get_env import get_path_from_env
-from utils.file_handler import read_csv_to_dataframe, save_dataframe_to_csv, get_all_csv_files_in_directory
+from utils.file_handler import (read_csv_to_dataframe, save_dataframe_to_csv, 
+                                get_all_csv_files_in_directory, check_if_directory_exists)
 from data_processing.convert_timestamps import convert_timestamps_from_miliseconds_to_localized_datetime_srs
 
 
@@ -219,7 +231,7 @@ def add_hour_as_cyclical(df: pd.DataFrame, time_col: str) -> pd.DataFrame:
 
     return df
 
-def process_files(input_dir: Path, output_dir: Path, transforms: list) -> None:
+def add_time_features_to_files(input_dir: Path, output_dir: Path, transforms: list) -> None:
     """
     Processes all CSV files in the input directory by applying the given transform functions
     and saving the modified files to the output directory.
@@ -243,6 +255,7 @@ def process_files(input_dir: Path, output_dir: Path, transforms: list) -> None:
 if __name__ == '__main__':
     input_path = get_path_from_env('INPUTS_PATH')
     output_path = get_path_from_env('OUTPUTS_PATH')
+    check_if_directory_exists(output_path)
 
     input_path_training = input_path
     input_path_testing = input_path / 'testing'
@@ -250,7 +263,7 @@ if __name__ == '__main__':
     output_path_training = output_path
     output_path_testing = output_path / 'testing'
 
-    transforms = [
+    features_to_add = [
         add_day_and_month_as_integers,
         add_weekday_as_integer,
         add_weekday_as_cyclical,
@@ -260,5 +273,5 @@ if __name__ == '__main__':
         add_hour_as_cyclical
     ]
 
-    process_files(input_path_training, output_path_training, transforms)
-    process_files(input_path_testing, output_path_testing, transforms)
+    add_time_features_to_files(input_path_training, output_path_training, features_to_add)
+    add_time_features_to_files(input_path_testing, output_path_testing, features_to_add)

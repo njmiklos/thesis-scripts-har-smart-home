@@ -1,14 +1,21 @@
+"""
+This script merges time-series sensor data from annotated CSV files and performs data cleaning
+(missing/infinite value handling) before saving the result to a single output file.
+
+Environment Configuration:
+- Set `INPUTS_PATH` and `OUTPUTS_PATH` in your `.env` file.
+- Refer to `README.md` for full setup and usage instructions.
+"""
 import pandas as pd
 import numpy as np
 
 from pathlib import Path
 from typing import Optional
 
-from utils.file_handler import get_all_csv_files_in_directory, read_csv_to_dataframe, save_dataframe_to_csv
+from utils.file_handler import (get_all_csv_files_in_directory, read_csv_to_dataframe, 
+                                check_if_directory_exists, save_dataframe_to_csv)
 from utils.get_env import get_path_from_env
 from data_analysis.summarize_classes import prefix_column_names_with_device_sensor_function
-from data_processing.convert_timestamps import (convert_timestamps_from_miliseconds_to_localized_datetime, 
-                                                convert_timestamps_from_localized_datetime_to_miliseconds)
 
 
 def process_file(file_path: Path, skip_unannotated: bool = True) -> pd.DataFrame:
@@ -32,7 +39,7 @@ def process_file(file_path: Path, skip_unannotated: bool = True) -> pd.DataFrame
     df = prefix_column_names_with_device_sensor_function(df, file_path)
     return df
 
-def merge_synchronized_files_into_single_df(dataset_path: Path, skip_unannotated: bool = False) -> Optional[pd.DataFrame]:
+def merge_files_on_time(dataset_path: Path, skip_unannotated: bool = False) -> Optional[pd.DataFrame]:
     """
     Merges multiple CSV files from a specified directory into a single DataFrame.
     Each file is processed (including optional removal of rows with 'annotation' equal to 'other'),
@@ -78,7 +85,7 @@ def merge_synchronized_files_into_single_df(dataset_path: Path, skip_unannotated
         print('WARNING: No CSV files found. Exiting.')
         return None
 
-def merge_annotated_synchronized_files_into_single_df(dataset_path: Path, skip_unannotated: bool = True) -> Optional[pd.DataFrame]:
+def merge_files_on_time_and_annotation(dataset_path: Path, skip_unannotated: bool = True) -> Optional[pd.DataFrame]:
     """
     Merges multiple CSV files from a specified directory into a single DataFrame.
     Each file is processed (including optional removal of rows with 'annotation' equal to 'other'),
@@ -211,33 +218,7 @@ def clean(df: pd.DataFrame) -> Optional[pd.DataFrame]:
     else:
         print('WARNING: DataFrame empty, skipping.')
 
-def subdivide_into_file_per_day(df: pd.DataFrame, output_path: Path):
-    """
-    Splits the DataFrame into separate files for each day.
-    The DataFrame is assumed to have a column 'time' containing
-    timestamps in milliseconds since the epoch, UTC Eurpe/Berlin.
-    
-    Each file contains data for one day (00:00:00 to 23:59:59) in the Europe/Berlin timezone.
-    
-    Args:
-        df (pd.DataFrame): The input DataFrame.
-        output_path (Path): Directory where the output files will be saved.
-    """
-    output_path.mkdir(parents=True, exist_ok=True)
-    
-    df = convert_timestamps_from_miliseconds_to_localized_datetime(df, 'time')
-    
-    grouped = df.groupby(df['time'].dt.date)
-
-    for day, group in grouped:
-        group = group.copy()    # Avoids SettingWithCopyWarning
-        group = convert_timestamps_from_localized_datetime_to_miliseconds(group, 'time')
-
-        filename = output_path / f'data_{day}.csv'
-        group.to_csv(filename, index=False)
-        print(f'INFO: Saved data for {day} to {filename}.')
-
-def merge_and_save_synchronized_files(dataset_path: Path, output_path: Path, skip_unannotated: bool = True, subdivide_into_days: bool = False) -> None:
+def merge_and_save_files(dataset_path: Path, output_path: Path, skip_unannotated: bool = True) -> None:
     """
     Merges CSV files from a specified dataset directory into a single DataFrame and saves the result to a CSV file.
     The processing includes optional removal of rows with 'annotation' equal to 'other'.
@@ -248,37 +229,16 @@ def merge_and_save_synchronized_files(dataset_path: Path, output_path: Path, ski
         skip_unannotated (bool, optional): If True, rows with 'annotation' equal to 'other' will be removed
             during file processing. Defaults to True.
     """
-    df = merge_annotated_synchronized_files_into_single_df(dataset_path, skip_unannotated)
-
-    if not df.empty:
-        if not subdivide_into_days:
-            save_dataframe_to_csv(df, output_path)
-        else:
-            subdivide_into_file_per_day(df, output_path)
-    else:
-        print('WARNING: DataFrame empty, skipping.')
+    df = merge_files_on_time_and_annotation(dataset_path, skip_unannotated)
+    save_dataframe_to_csv(df, output_path)
 
 
 if __name__ == '__main__':
-    base_path = get_path_from_env('BASE_PATH')
-
-    # Adjust before running
-    dataset_path = base_path / 'Dataset Transition Activities'
-
-    '''
+    dataset_filename = 'Transition Activities.csv'
     skip_unannotated = True
-    subdivide_into_days = False
 
-    if subdivide_into_days:
-        output_path = dataset_path / 'Synchronized_merged_10s_daily'
-    else:
-        output_path = dataset_path / 'Synchronized_merged_10s.csv'
-    merge_and_save_synchronized_files(dataset_path, output_path, skip_unannotated, subdivide_into_days)
-    '''
+    input_dir = get_path_from_env('INPUTS_PATH')
+    output_dir = get_path_from_env('OUTPUTS_PATH')
+    check_if_directory_exists(output_dir)
 
-    # Subdivided only
-    dataset_file = dataset_path / 'Transition Activities.csv'
-    df = read_csv_to_dataframe(dataset_file)
-
-    output_path = dataset_path
-    subdivide_into_file_per_day(df, output_path)
+    merge_and_save_files(input_dir, output_dir, skip_unannotated)

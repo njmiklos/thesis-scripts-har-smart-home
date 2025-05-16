@@ -1,9 +1,20 @@
+"""
+This script synchronizes time-series sensor data from multiple CSV files by resampling and aligning 
+timestamps to a common global start time and fixed frequency.
+
+Environment Configuration:
+- Define paths to input and output directories in `.env`.
+- Refer to `README.md` for full setup and usage instructions.
+"""
 import pandas as pd
 from pathlib import Path
 
 from utils.get_env import get_path_from_env
-from utils.file_handler import get_all_csv_files_in_directory, read_csv_to_dataframe, save_dataframe_to_csv
-from data_processing.convert_timestamps import convert_timestamps_from_miliseconds_to_localized_datetime, convert_timestamps_from_localized_datetime_to_miliseconds
+from utils.file_handler import (get_all_csv_files_in_directory, read_csv_to_dataframe, 
+                                save_dataframe_to_csv, check_if_directory_exists)
+from data_processing.convert_timestamps import (convert_timestamps_from_miliseconds_to_localized_datetime, 
+                                                convert_timestamps_from_localized_datetime_to_miliseconds)
+
 
 def get_global_start_time(files: list) -> pd.Timestamp:
     """
@@ -151,17 +162,20 @@ def process_file(file_path: Path, output_path: Path, frequency: str, global_star
     else:
         print(f'Warning: {file_path} is empty. Skipping...')
 
+def synchronize_files(frequency: str, input_dir_path: Path, output_dir_path: Path) -> None:
+    """
+    Synchronizes CSV files.
 
-if __name__ == '__main__':
-    base_path = get_path_from_env('BASE_PATH')
-    dataset_path = base_path / 'Sync_ready'
-    new_dataset_path = base_path / 'Synchronized'
-    frequency = '1s'
+    Args:
+        frequency (str): The resampling frequency (e.g., '1S', '100ms') used to align the timestamps.
+        input_dir_path (Path): The directory where the CSV files to be synchronized are.
+        output_path (Path): The directory where the synchronized CSV files will be saved.
 
-    files = get_all_csv_files_in_directory(dataset_path)
-
+    Returns:
+        None
+    """
+    files = get_all_csv_files_in_directory(input_dir_path)
     if files:
-
         global_start_time = get_global_start_time(files)
         print(f'INFO: Setting global start time for all files: {global_start_time}')
 
@@ -169,9 +183,19 @@ if __name__ == '__main__':
         counter = 1
         for file in files:
             print(f'INFO: Processing file {counter}/{no_files} {file.name}...')
-            process_file(file, new_dataset_path, frequency=frequency, global_start=global_start_time)
+            process_file(file, output_dir_path, frequency=frequency, global_start=global_start_time)
             counter = counter + 1
 
         print('INFO: Synchronization complete.')
     else:
         print('WARNING: No CSV files found. Exiting.')
+
+
+if __name__ == '__main__':
+    frequency = '1s'
+
+    input_dir_path = get_path_from_env('INPUTS_PATH')
+    output_dir_path = get_path_from_env('OUTPUTS_PATH')
+    check_if_directory_exists(output_dir_path)
+
+    synchronize_files(frequency, input_dir_path, output_dir_path)

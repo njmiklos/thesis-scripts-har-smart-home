@@ -1,7 +1,12 @@
 """
-This code segments a dataset into windows, formats them for stage 1, and saves into a JSON file.
+This script segments time-series sensor data into overlapping sliding windows, compresses each 
+window into a compact, human-readable format, and saves the results as JSON files. Each window 
+is annotated with ground-truth labels and tracked for processing time and memory usage.
 
-It is recommended to first segment the dataset into episodes. This ensures that less data is loaded into memory at once.
+Environment Configuration:
+- Set `INPUTS_PATH`, `OUTPUTS_PATH`, and `ANNOTATIONS_FILE_PATH` in your `.env` file.
+- Input files must be CSVs containing sensor data, each with a `time` column in milliseconds.
+- Refer to `README.md` for full setup and usage instructions.
 """
 import pandas as pd
 
@@ -176,7 +181,7 @@ def get_last_timestamp(df: pd.DataFrame, time_col_name: str, filename: str) -> i
         raise ValueError(f"Missing {time_col_name} column in file: {filename}")
     return df[time_col_name].iloc[-1]
 
-def process_files(window_size: int, window_overlap: int, time_col_name: str, annotations_file_path: Path, 
+def compress_files(window_size: int, window_overlap: int, time_col_name: str, annotations_file_path: Path, 
                   input_dir_path: Path, output_dir_path: Path, columns: Optional[List[str]], 
                   windows_per_file: int = 0) -> None:
     """
@@ -242,5 +247,5 @@ if __name__ == '__main__':
     annotations_file_path = get_path_from_env('ANNOTATIONS_FILE_PATH')
 
     check_if_directory_exists(output_dir_path)
-    process_files(window_size, window_overlap, time_col_name, annotations_file_path, input_dir_path, output_dir_path, 
+    compress_files(window_size, window_overlap, time_col_name, annotations_file_path, input_dir_path, output_dir_path, 
                   columns, windows_per_file)

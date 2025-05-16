@@ -1,9 +1,19 @@
+"""
+Provides utilities for segmenting time-series sensor data into meaningful chunks,
+such as annotated episodes, daily files, fixed-length windows, or arbitrary slices around specific 
+timestamps or row ranges.
+
+Environment Configuration:
+- Set `INPUTS_PATH` and `OUTPUTS_PATH` in a `.env` file.
+- Input files must include a `time` column in milliseconds.
+- Refer to `README.md` for full setup and usage instructions.
+"""
 import pandas as pd
 from typing import List
 from pathlib import Path
 
 from utils.get_env import get_path_from_env
-from utils.file_handler import read_csv_to_dataframe, save_dataframe_to_csv
+from utils.file_handler import read_csv_to_dataframe, save_dataframe_to_csv, check_if_directory_exists
 from data_processing.infer.metadata import infer_data_collection_days_from_time_column
 from data_processing.filter import filter_by_timestamp, filter_by_date
 
@@ -236,8 +246,6 @@ def extract_middle_segment(df: pd.DataFrame, window_size: int, output_path: Path
 
 def segment_into_windows(df: pd.DataFrame, window_size: int, overlap_size: int, output_directory_path: Path, output_filename_prefix: str = 'window'):
     """
-    ! Not tested.
-
     Segments a DataFrame into overlapping windows and saves each window as a CSV file.
 
     Args:
@@ -276,12 +284,15 @@ def segment_into_windows(df: pd.DataFrame, window_size: int, overlap_size: int, 
         start_position += (window_size - overlap_size)
         segment_count += 1
 
+
 if __name__ == '__main__':
     # Paths
     #annotated_episodes_path = get_path_from_env('ANNOTATIONS_FILE_PATH')
     input_file_name = 'synchronized_merged_selected_annotated_new_col_names.csv'
+
     input_dataset_path = get_path_from_env('INPUTS_PATH') / input_file_name
     output_path = get_path_from_env('OUTPUTS_PATH')
+    check_if_directory_exists(output_path)
 
     # Read datasets
     dataset_df = read_csv_to_dataframe(input_dataset_path)
