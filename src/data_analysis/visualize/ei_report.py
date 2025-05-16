@@ -8,7 +8,7 @@ import numpy as np
 from pathlib import Path
 
 from utils.get_env import get_path_from_env
-from utils.file_handler import read_csv_to_dataframe, load_json_file
+from utils.file_handler import read_csv_to_dataframe, load_json_file, check_if_directory_exists
 from data_analysis.visualize.utils import generate_confusion_matrix, generate_comparative_timeseries_plot
 
 
@@ -85,7 +85,7 @@ if __name__ == '__main__':
     classification_report_path = get_path_from_env('INPUTS_PATH') / classification_report_file_name
     training_process_file_path = get_path_from_env('INPUTS_PATH') / training_process_file_name
     output_dir_path = get_path_from_env('OUTPUTS_PATH')
-    output_dir_path.mkdir(parents=True, exist_ok=True)
+    check_if_directory_exists(output_dir_path)
 
     report = load_json_file(classification_report_path)
 

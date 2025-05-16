@@ -1,11 +1,12 @@
 """
-This code segments an annotated dataset into windows, classifies them, and summarizes the results. 
-The purpose is to test EI models locally.
+This script segments an annotated dataset into sliding windows, runs classification on each window 
+using a specified Edge Impulse (EI) model, and summarizes the classification results. It is designed 
+to test and evaluate EI models locally.
 
-The dataset should be segmented into episodes. This ensures that less data is loaded into memory at once.
-
-This version tests one of four DL models (Single, Rooutines, Transitions, Food) at a time, 
-each on their unique testing sets.
+Environment Configuration:
+- The dataset must be split into individual episodes (CSV files) for memory-efficient processing.
+- Set paths to input/output folders, model file, and annotations file in a `.env` file.
+- Refer to `README.md` for full setup and usage instructions.
 """
 import pandas as pd
 import numpy as np
@@ -16,7 +17,8 @@ from pathlib import Path
 
 from inference.edge_impulse_runner import ImpulseRunner
 from utils.get_env import get_path_from_env
-from utils.file_handler import read_csv_to_dataframe, get_all_csv_files_in_directory, save_to_json_file
+from utils.file_handler import (read_csv_to_dataframe, get_all_csv_files_in_directory, 
+                                save_to_json_file, check_if_directory_exists)
 from inference.classify_with_ei_model import load_model, close_loaded_model, classify_window, get_top_prediction
 from inference.evaluate.utils import ClassificationResults, TimeMemoryTracer
 from data_processing.annotate import determine_true_annotation
@@ -306,6 +308,6 @@ if __name__ == '__main__':
     model_file_path = get_path_from_env('MODEL_PATH')
     annotations_file_path = get_path_from_env('ANNOTATIONS_FILE_PATH')
 
-    output_dir_path.mkdir(parents=True, exist_ok=True)
+    check_if_directory_exists(output_dir_path)
 
     process_files(window_size, window_overlap, model_file_path, annotations_file_path, input_dir_path, output_dir_path)

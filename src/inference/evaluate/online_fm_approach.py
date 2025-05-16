@@ -1,12 +1,22 @@
 """
-This code summarizes the final results of the annotation process with FM.
-The purpose is to evaluate how well an online FM annotated data through an API.
+This script summarizes the results of the annotation process performed by an online Foundation Model via API
+fo evaluation. It compares predicted annotations to ground truth labels, tracks resource usage 
+(time, memory, token count), and generates a detailed performance report.
+
+The report includes accuracy metrics, a confusion matrix, total processing time, and token usage, 
+which helps assess how well the FM performed in an automated annotation task.
+
+Environment Configuration:
+- Set paths to input/output folders and the annotations file in your `.env` file.
+- Input must be a directory of JSON files containing annotated windows.
+- Refer to `README.md` for full setup and usage instructions.
 """
 from pathlib import Path
 from typing import List, Optional
 
 from utils.get_env import get_path_from_env
-from utils.file_handler import save_to_json_file, load_json_file, get_all_json_files_in_directory, read_csv_to_dataframe
+from utils.file_handler import (save_to_json_file, load_json_file, get_all_json_files_in_directory, 
+                                read_csv_to_dataframe, check_if_directory_exists)
 from inference.evaluate.utils import ClassificationResults
 from inference.process_windows_with_fm import ExtendedWindow, convert_dict_list_to_window_list
 from inference.evaluate.ei_model import visualize_confusion_matrix
@@ -179,6 +189,6 @@ if __name__ == '__main__':
     input_path = get_path_from_env('INPUTS_PATH')
     annotations_file = get_path_from_env('ANNOTATIONS_FILE_PATH')
     output_dir_path = get_path_from_env('OUTPUTS_PATH')
-    output_dir_path.mkdir(parents=True, exist_ok=True)
+    check_if_directory_exists(output_dir_path)
 
     generate_fm_annotation_report(input_path, annotations_file, output_dir_path, report_filename)

@@ -2,7 +2,8 @@ import pandas as pd
 from pathlib import Path
 
 from utils.get_env import get_path_from_env
-from utils.file_handler import read_csv_to_dataframe, save_dataframe_to_csv, get_all_csv_files_in_directory
+from utils.file_handler import (read_csv_to_dataframe, save_dataframe_to_csv, 
+                                get_all_csv_files_in_directory, check_if_directory_exists)
 
 
 def determine_true_annotation(annotations: pd.DataFrame, time: int) -> str:
@@ -75,7 +76,7 @@ def process_data_files(path_dataset: Path, path_output_dataset: Path, path_annot
 if __name__ == '__main__':
     input_dir_path = get_path_from_env('INPUTS_PATH')
     output_dir_path = get_path_from_env('OUTPUTS_PATH')
-    output_dir_path.mkdir(parents=True, exist_ok=True)
+    check_if_directory_exists(output_dir_path)
 
     path_annotation_file = input_dir_path / 'annotations_combined.csv'
     path_dataset = input_dir_path / 'files_to_annotate'

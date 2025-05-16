@@ -1,13 +1,16 @@
 """
-This code segments an annotated dataset into windows, classifies them, and summarizes the results. 
-The purpose is to test EI models locally.
+This script segments an annotated dataset into sliding windows, runs classification on each window 
+using multiple specialized Edge Impulse (EI) models simultaneously, and summarizes the results. 
+It is designed to evaluate the Multi-Model Approach for my thesis.
 
-The dataset should be segmented into episodes. This ensures that less data is loaded into memory at once.
+In the thesis, each window is processed by three dedicated models (e.g., for food, routines, transitions). 
+Each model returns a class and a confidence score. The prediction with the highest confidence 
+across all models that is not 'other' is selected as the final label for that window.
 
-This version tests the Multi-Model Approach. Each window is processed by three specialized DL models
-at the same time. Each model returns a class and its confidence about the choice. The class with 
-the highest confidence is saved as the prediction for the window, and results from all windows
-determine the efficiency of the approach.
+Environment Configuration:
+- The dataset must be segmented into individual episodes (CSV files) for memory-efficient processing.
+- Set paths to the input/output folder, EI model files and annotations file in a `.env` file.
+- Refer to `README.md` for full setup and usage instructions.
 """
 import pandas as pd
 import numpy as np
@@ -17,7 +20,7 @@ from typing import List, Optional
 from pathlib import Path
 
 from utils.get_env import get_path_from_env
-from utils.file_handler import read_csv_to_dataframe, get_all_csv_files_in_directory
+from utils.file_handler import read_csv_to_dataframe, get_all_csv_files_in_directory, check_if_directory_exists
 from inference.classify_with_ei_model import load_model, close_loaded_model, classify_window, get_top_prediction
 from inference.evaluate.utils import ClassificationResults, TimeMemoryTracer
 from inference.evaluate.ei_model import (validate_window_size_and_overlap, save_to_json_file, visualize_confusion_matrix, 
@@ -269,6 +272,6 @@ if __name__ == '__main__':
     
     annotations_file_path = get_path_from_env('ANNOTATIONS_FILE_PATH')
 
-    output_dir_path.mkdir(parents=True, exist_ok=True)
+    check_if_directory_exists(output_dir_path)
 
     process_files(window_size, window_overlap, model_file_paths, annotations_file_path, input_dir_path, output_dir_path)

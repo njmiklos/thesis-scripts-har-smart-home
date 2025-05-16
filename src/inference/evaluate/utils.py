@@ -1,3 +1,8 @@
+"""
+This module provides utility classes for performance tracking and evaluation of classification tasks:
+- `ClassificationResults` to collect and summarize results across multiple windows or files.
+- `TimeMemoryTracer` to monitor the time and memory footprint of individual classification calls.
+"""
 from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, f1_score, recall_score
 import time
 import tracemalloc

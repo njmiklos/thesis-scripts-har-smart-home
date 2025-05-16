@@ -112,8 +112,8 @@ def save_to_json_file(output_dir_path: Path, dictionary: dict, output_file_name:
         dictionary (dict): The dictionary to be saved.
         output_file_name (Optional[str]): Filename for the report, defaults to 'classification_report.json'.
     """
+    check_if_directory_exists(output_dir_path)
     output_path = output_dir_path / output_file_name
-    output_dir_path.mkdir(parents=True, exist_ok=True)
 
     with open(output_path, 'w') as f:
         json.dump(dictionary, f, indent=4)

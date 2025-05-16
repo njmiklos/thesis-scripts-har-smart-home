@@ -1,12 +1,19 @@
 """
-This code grabs formatted windows from a JSON file, sends them to an API of a Foundation Model, 
-tracks the process, and saves results and metrics into a JSON file.
+This script processes pre-formatted windows of data by sending them to a Foundation Model API 
+for annotation or summarization. It tracks processing time and memory usage, manages token statistics, 
+and writes the new window data and metrics to a JSON file.
+
+Environment Configuration:
+- Define API credentials and I/O directory paths in your `.env` file.
+- Provide input data in JSON format in the input folder.
+- Provide a text file with a prompt in a text file.
+- Refer to `README.md` for full setup instructions.
 """
 from pathlib import Path
 from typing import List
 
 from utils.get_env import get_path_from_env
-from utils.file_handler import save_to_json_file, load_json_file
+from utils.file_handler import save_to_json_file, load_json_file, check_if_directory_exists
 from data_processing.compress_for_fm import Window
 from inference.query_fm_api import send_chat_request, get_rate_limits
 from inference.evaluate.utils import TimeMemoryTracer
@@ -193,7 +200,6 @@ if __name__ == '__main__':
 
     input_dir_path = get_path_from_env('INPUTS_PATH')
     output_dir_path = get_path_from_env('OUTPUTS_PATH') / f'stage_{stage}'
-
-    output_dir_path.mkdir(parents=True, exist_ok=True)
+    check_if_directory_exists(output_dir_path)
 
     process_windows(model_name, input_dir_path, output_dir_path, input_windows_filename, prompt_filename)

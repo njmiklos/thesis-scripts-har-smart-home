@@ -1,12 +1,22 @@
 """
-This is based on "classify.py" from https://github.com/edgeimpulse/linux-sdk-python/tree/master/examples/custom
+This module provides a utility pipeline for running local classification using Edge Impulse's 
+compiled machine learning models (`*.eim` files). It loads a model, parses input data, runs 
+inference, and prints classification results and timing information.
 
-It expects "runner.py" from https://github.com/edgeimpulse/linux-sdk-python/tree/master/edge_impulse_linux 
-as "edge_impulse_runner.py" in the same directory ("src").
+Please note that if you want to use Edge Impulse models locally with this script, you must:
+- Download the file `runner.py` from Edge Impulse's GitHub repository `linux-sdk-python`: 
+https://github.com/edgeimpulse/linux-sdk-python/blob/master/edge_impulse_linux/runner.py
+- Move the file to the directory `src/inference`.
+- Rename the file to `edge_impulse_runner.py`.
+
+Environment Configuration:
+- Paths to input and output directories must be defined in your `.env` file.
+- Refer to `README.md` for full setup instructions.
 """
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Tuple
 
+from utils.file_handler import check_if_directory_exists
 from utils.get_env import get_path_from_env
 from inference.edge_impulse_runner import ImpulseRunner
 
@@ -138,7 +148,7 @@ if __name__ == '__main__':
     input_dir_path = get_path_from_env('INPUTS_PATH')
     model_file_path = input_dir_path / 'single-model-approach-linux-x86_64-v5.eim'
     output_dir_path = get_path_from_env('OUTPUTS_PATH')
-    output_dir_path.mkdir(parents=True, exist_ok=True)
+    check_if_directory_exists(output_dir_path)
 
     # Some txt window data
     data = '''

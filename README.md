@@ -27,9 +27,25 @@ This repository covers working with timeseries sensor data in preparation for a 
 - 🤖 Inference: Predicting annotations for sensor data with deep learning and foundation models, and evaluating their quality against true annotations.
 - 🗃️ Utils: Generic functions for handling files, logging, setting up the working evironment for the project.
 # 🛠️ Usage Instructions
-## 1. Download the Repository
+## 1. Download this Repository
 - Follow the [GitHub documentation](https://docs.github.com/en/get-started/start-your-journey/downloading-files-from-github)
-## 2. Install Dependencies
+## 2. Download `runner.py` to Run Edge Impulse Models
+If you want to use Edge Impulse models locally:
+- Download the [file `runner.py` from Edge Impulse's GitHub repository `linux-sdk-python`](https://github.com/edgeimpulse/linux-sdk-python/blob/master/edge_impulse_linux/runner.py).
+- Move the file to the directory `src/inference`.
+- Rename the file to `edge_impulse_runner.py`. Your `src/inference/` directory should look like this:
+```
+.
+├── 📄 classify_with_ei_model.py
+├── 📄 edge_impulse_runner.py       # Renamed `runner.py`
+├── 📁 evaluate
+│   └── ...
+├── 📄 __init__.py
+├── 📄 process_windows_with_fm.py
+└── 📄 query_fm_api.py
+```
+This allows the scripts to interact with local Edge Impulse models.
+## 3. Install Dependencies
 There are a couple of libraries used in this project. You'll need them to run the scripts. 
 1. Make sure you have Python installed with `python --version` or `python3 --version` for higher versions. If no specific version is shown, e.g., `Python 3.10.12`, you need to install Python.
 2. a. Optional, recommended: Create a virtual environment.  
@@ -41,9 +57,9 @@ If you're not familiar with virtual environments, here's a quick guide: A virtua
 4. Navigate to the project's root directory: `cd thesis-scripts-har-smart-home`.
 5. Install all required packages: `pip install -r requirements.txt`.
 6. Optional, recommended: Verify the installation by listing all packages within the virtual environment: `pip list`. The list should match the content of `requirements.txt`.
-## 3. Create an .env File
-To run the scripts, you must create a .env file with environment variables for paths and database credentials. The .env file is not included in this repository to protect privacy and security.
-### .env File Example
+## 4. Create an `.env` File
+To run the scripts, you must create a `.env` file with environment variables for paths and database credentials. The `.env` file is not included in this repository to protect privacy and security.
+### `.env` File Example
 ```
 # Directory Paths
 BASE_PATH=/your-path-to-repository/thesis-scripts-har-smart-home/src/
@@ -57,7 +73,7 @@ HOST='localhost'
 PORT=8086   # typically
 DATABASE_NAME='name_of_your_database'
 
-# Coommunication with the Chat Academic Cloud API
+# Communication with the Chat Academic Cloud API
 CHAT_AC_API_KEY='yourKey'
 CHAT_AC_ENDPOINT='https://chat-ai.academiccloud.de/yourEndpoint'
 ```
@@ -72,7 +88,7 @@ CHAT_AC_ENDPOINT='https://chat-ai.academiccloud.de/yourEndpoint'
 - `MODEL_PATH`: Path to an Edge Impulse model file (`*.eim`).
 - My database engine is InfluxDB (version 1.x). The API requires `HOST`, `PORT`, and `DATABASE_NAME`.
 - I used the [Chat Academic Cloud API](https://docs.hpc.gwdg.de/services/saia/index.html) when working with Foundation Models. I needed an API key `CHAT_AC_API_KEY` and an endpoint address `CHAT_AC_ENDPOINT`.
-## 4. Run Scripts
+## 5. Run Scripts
 >⚠️ **Note:** If you work with a virtual environment, make sure that it is active.
 1. Write your own `main.py` and import necessary scripts or adjust an existing main code accordingly. You can add or remove variables in the *.env file and use them instead of fixed paths in the scripts.
 2. Set your working directory to `thesis-scripts-har-smart-home/src`

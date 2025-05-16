@@ -1,5 +1,14 @@
+"""
+This module provides utilities for interacting with a chat-based API that supports both text and image input.
+It is designed to streamline communication with online foundation models by handling payload construction,
+image encoding, error handling, retries, and rate-limit tracking and management.
+
+Environment Configuration:
+- Ensure that your API key and endpoint are specified in the `.env` file. 
+- Refer to `README.md` for full setup instructions.
+"""
 import requests
-import base64   # Used to encode images in base64 format for API transmission
+import base64       # Used to encode images in base64 format for API transmission
 import mimetypes    # Used to detect the MIME type of an image based on its file extension
 import time
 
@@ -334,13 +343,9 @@ def print_formatted_exchange(user_message: str, system_response: requests.Respon
 
 if __name__ == '__main__':
     model = 'meta-llama-3.1-8b-instruct'
-
     image_path = None
-
     prompt = '''You are a helpful companion.'''
-    
     user_message = '''Tell me a joke.'''
 
     system_response = send_chat_request(model=model, prompt=prompt, user_message=user_message, image_path=image_path)
-
     print_formatted_exchange(user_message, system_response)
