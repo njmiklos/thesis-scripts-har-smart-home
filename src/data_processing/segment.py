@@ -43,7 +43,7 @@ def segment_into_annotated_episodes(dataset_df: pd.DataFrame, annotations_df: pd
 
         episode_df = filter_by_timestamp(dataset_df, start_time, end_time).copy()
 
-        if not episode_df.empty:
+        if episode_df is not None and not episode_df.empty:
             if unannotated:
                 episode_df.loc[:, 'annotation'] = annotation
             episodes.append(episode_df)

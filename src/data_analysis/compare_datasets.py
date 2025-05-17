@@ -1,3 +1,25 @@
+"""
+Generates statistical summaries and comparative visualizations for time-series sensor data stored in CSV files.
+
+This script analyzes both raw and modified datasets, computing key statistics (e.g., mean, IQR, RMSE) for each
+measurement. It optionally generates histograms and scatter plots, and appends the results to a summary CSV file
+for further comparison across modifications (e.g., "Synchronized", "Resampled").
+
+Example output (clipped):
+```
+Measurement,Raw,Resampled bfill,Resampled ffill,Resampled mean,Resampled min,Resampled 0,Resampled interpolate
+d1 hygrometer humidity missing values count,0,0,0,0,0,0,0
+d1 hygrometer humidity infinite values count,0,0,0,0,0,0,0
+d1 hygrometer humidity minimum value,50.13427734375,50.13427734375,50.13427734375,50.13427734375,50.13427734375,0,50.13427734375
+d1 hygrometer humidity maximum value,70.623779296875,70.623779296875,70.623779296875,70.623779296875,70.623779296875,70.623779296875,70.623779296875
+d1 hygrometer humidity median value,61.23046875,61.23046875,61.23046875,61.3525390625,60.302734375,0,61.23046875
+```
+
+Environment Configuration:
+- Set `BASE_PATH` in your `.env` file to specify the base directory containing both raw and modified datasets.
+- Input files must be time-aligned CSVs, each containing a 'time' column and at least one numeric measurement column.
+- Refer to `README.md` for full setup, usage instructions, and formatting requirements.
+"""
 import pandas as pd
 from pathlib import Path
 
@@ -44,7 +66,7 @@ def get_df_sample(file_path: Path, sample_size: float) -> pd.DataFrame:
         pd.DataFrame: A sampled DataFrame if the file is not empty; otherwise, an empty DataFrame.
     """
     df = read_csv_to_dataframe(file_path)
-    if not df.empty:
+    if df is not None and not df.empty:
         df = df.sample(frac=sample_size, random_state=42)
     else:
         print('WARNING: Got an empty DataFrame, cannot sample that, skipping.')
@@ -143,7 +165,7 @@ def save_summary(summary_df: pd.DataFrame, output_path: Path, modification: str 
     Returns:
         None
     """
-    if not summary_df.empty:
+    if summary_df is not None and not summary_df.empty:
         if modification:
             modification = modification.lower()
             print(f'Saving modified summary file to {output_path}/stats_summary_{modification}.csv')
@@ -235,7 +257,7 @@ def get_new_table_for_summary(file_paths: List[Path], output_path: Path, histogr
 
         file_df, _ = get_dataframes(sampling, file_path, None, sample_size_motion, sample_size_ambient)
 
-        if not file_df.empty:
+        if file_df is not None and not file_df.empty:
             for measurement in file_df:
                 if measurement != 'time':
                     title, time_axis_label, value_axis_label = get_labels(device_type, measurement, 'Raw')
@@ -306,7 +328,7 @@ def add_column_to_table_summary(og_dataset_file_paths: List[Path], mod_dataset_f
         og_file_df, mod_file_df = get_dataframes(sampling, og_file_path, mod_file_path, 
                                                  sample_size_motion, sample_size_ambient)
 
-        if not summary_df.empty and not mod_file_df.empty:
+        if (summary_df is not None and not summary_df.empty) and (mod_file_df is not None and not mod_file_df.empty):
             for measurement in mod_file_df:
                 if measurement != 'time':
                     title, time_axis_label, value_axis_label = get_labels(device_type, measurement, modification)
@@ -334,50 +356,115 @@ def add_column_to_table_summary(og_dataset_file_paths: List[Path], mod_dataset_f
     summary_df = summary_df.rename(columns={'index': 'Measurement'})
     save_summary(summary_df, output_path / 'Analysis', modification)
 
+def run_single_dataset_analysis(og_dataset_path: Path, histogram: bool, scatter: bool, 
+                                sampling: bool, sample_size_motion: float, sample_size_ambient: float) -> None:
+    """
+    Processes all CSV files in the specified raw dataset directory to generate a new summary table and optional visualizations.
+    This function is used for unmodified/first dataset needs summary. For each file, it:
+      - Reads and optionally samples the data.
+      - Computes summary statistics for each measurement column (excluding 'time').
+      - Optionally generates histogram and scatter plots.
+      - Saves the results in a summary CSV file (`stats_summary_raw.csv`) in the `Analysis/` directory.
+
+    Args:
+        og_dataset_path (Path): Directory containing the raw CSV files to analyze.
+        histogram (bool): Whether to generate histogram plots for each measurement.
+        scatter (bool): Whether to generate scatter plots for each measurement.
+        sampling (bool): Whether to sample the dataset to reduce data size.
+        sample_size_motion (float): Sampling ratio for motion-related data (e.g., 0.1 for 10%).
+        sample_size_ambient (float): Sampling ratio for ambient-related data (e.g., 0.5 for 50%).
+
+    Returns:
+        None
+    """
+    og_dataset_file_paths = get_all_csv_files_in_directory(og_dataset_path)
+    og_dataset_file_paths.sort()
+
+    graphs_dir = og_dataset_path / 'Graphs'
+    analysis_dir = og_dataset_path / 'Analysis'
+    check_if_output_directory_exists(graphs_dir)
+    check_if_output_directory_exists(analysis_dir)
+
+    get_new_table_for_summary(og_dataset_file_paths, og_dataset_path, histogram, scatter,
+                              sampling, sample_size_motion, sample_size_ambient)
+
+
+def run_dataset_comparison(og_dataset_path: Path, mod_dataset_path: Path, modification: str,
+                           histogram: bool, scatter: bool, sampling: bool, 
+                           sample_size_motion: float, sample_size_ambient: float) -> None:
+    """
+    Compares modified datasets against original datasets by updating a shared summary table.
+
+    For each corresponding pair of original and modified files:
+      - Reads and optionally samples the data.
+      - Computes summary statistics for the modified version.
+      - Optionally generates comparative histogram and scatter plots.
+      - Computes RMSE between the original and modified data columns.
+      - Updates the existing summary table (`stats_summary_raw.csv`) by adding a new column labeled with the 
+        modification type (e.g., "Synchronized").
+
+    The updated summary is saved to `Analysis/stats_summary_<modification>.csv` in the modified dataset directory.
+
+    Args:
+        og_dataset_path (Path): Directory containing the original (raw) dataset CSV files.
+        mod_dataset_path (Path): Directory containing the modified dataset CSV files.
+        modification (str): Label for the modification type (e.g., 'Synchronized').
+        histogram (bool): Whether to generate comparative histogram plots.
+        scatter (bool): Whether to generate comparative scatter plots.
+        sampling (bool): Whether to sample both datasets before analysis.
+        sample_size_motion (float): Sampling ratio for motion-related data (e.g., 0.1 for 10%).
+        sample_size_ambient (float): Sampling ratio for ambient-related data (e.g., 0.5 for 50%).
+
+    Returns:
+        None
+    """
+    og_dataset_file_paths = get_all_csv_files_in_directory(og_dataset_path)
+    mod_dataset_file_paths = get_all_csv_files_in_directory(mod_dataset_path)
+    og_dataset_file_paths.sort()
+    mod_dataset_file_paths.sort()
+
+    graphs_dir = mod_dataset_path / 'Graphs'
+    analysis_dir = mod_dataset_path / 'Analysis'
+    check_if_output_directory_exists(graphs_dir)
+    check_if_output_directory_exists(analysis_dir)
+
+    analysis_path = og_dataset_path / 'Analysis' / 'stats_summary_raw.csv'
+    summary_df = read_csv_to_dataframe(analysis_path)
+
+    add_column_to_table_summary(og_dataset_file_paths, mod_dataset_file_paths, mod_dataset_path, 
+                                summary_df, modification, histogram, scatter,
+                                sampling, sample_size_motion, sample_size_ambient)
+
 
 if __name__ == "__main__":
-    base_path = get_path_from_env('BASE_PATH')
-
-    # Set before running
     modification = 'Synchronized'
-    og_dataset_path = base_path / 'Raw_relevant'
-    #mod_dataset_path = og_dataset_path
-    mod_dataset_path = base_path / 'Synchronized'
     histogram = False
     scatter = True
     sampling = False
     sample_size_motion = 0.1
     sample_size_ambient = 0.5
 
-    og_dataset_file_paths = get_all_csv_files_in_directory(og_dataset_path)
-    og_dataset_file_paths.sort()
-
-    analysis_filename = 'stats_summary.csv'
-    analysis_dir = og_dataset_path / 'Analysis'
-    analysis_path = analysis_dir / analysis_filename
-    check_if_output_directory_exists(analysis_dir)
+    base_path = get_path_from_env('BASE_PATH')
+    og_dataset_path = base_path / 'Raw_relevant'
+    mod_dataset_path = base_path / 'Synchronized'  # Change to og_dataset_path for raw-only run
 
     if mod_dataset_path == og_dataset_path:
-        if histogram or scatter:
-            graphs_dir = og_dataset_path / 'Graphs'
-            check_if_output_directory_exists(graphs_dir)
-
-        get_new_table_for_summary(og_dataset_file_paths, og_dataset_path, histogram, scatter,
-                                  sampling, sample_size_motion, sample_size_ambient)
-        
+        run_single_dataset_analysis(
+            og_dataset_path=og_dataset_path,
+            histogram=histogram,
+            scatter=scatter,
+            sampling=sampling,
+            sample_size_motion=sample_size_motion,
+            sample_size_ambient=sample_size_ambient
+        )
     else:
-        analysis_filename = f'table_summary_{modification}.csv'
-
-        mod_analysis_dir = mod_dataset_path / 'Analysis'
-        check_if_output_directory_exists(mod_analysis_dir)
-
-        graphs_dir = mod_dataset_path / 'Graphs'
-        check_if_output_directory_exists(graphs_dir)
-
-        mod_dataset_file_paths = get_all_csv_files_in_directory(mod_dataset_path)
-        mod_dataset_file_paths.sort()
-
-        summary_df = read_csv_to_dataframe(analysis_path)
-        add_column_to_table_summary(og_dataset_file_paths, mod_dataset_file_paths, mod_dataset_path, 
-                                    summary_df, modification, histogram, scatter,
-                                    sampling, sample_size_motion, sample_size_ambient)
+        run_dataset_comparison(
+            og_dataset_path=og_dataset_path,
+            mod_dataset_path=mod_dataset_path,
+            modification=modification,
+            histogram=histogram,
+            scatter=scatter,
+            sampling=sampling,
+            sample_size_motion=sample_size_motion,
+            sample_size_ambient=sample_size_ambient
+        )

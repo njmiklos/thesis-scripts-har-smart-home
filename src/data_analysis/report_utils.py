@@ -1,3 +1,8 @@
+"""
+Provides utility functions for statistical analysis of time-series sensor data, including 
+interquartile range calculations, outlier detection thresholds, correlation measurement, 
+and RMSE error analysis for data comparison.
+"""
 import pandas as pd
 import numpy as np
 from typing import Tuple

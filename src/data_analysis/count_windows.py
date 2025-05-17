@@ -3,8 +3,12 @@ Returns the number of windows with the specified window size and overlap that a 
 can be separated into.
 
 Useful for cases where the number of predictions needs to be known ahead of time, e.g., with paid APIs.
-"""
 
+Environment Configuration:
+- Set `INPUTS_PATH` in your `.env` file to specify the directory containing input CSV files.
+- Input files must be time-aligned CSVs with a uniform row structure (e.g., sensor samples at fixed intervals).
+- Refer to `README.md` for full setup, usage instructions, and formatting requirements.
+"""
 import pandas as pd
 
 from pathlib import Path
@@ -39,7 +43,7 @@ def count_windows(df: pd.DataFrame, window_size: int, window_overlap: int) -> in
 
     return segments
 
-def process_files(window_size: int, window_overlap: int, input_dir_path: Path) -> None:
+def count_windows_in_files(window_size: int, window_overlap: int, input_dir_path: Path) -> None:
     """
     Iterates over all CSV files in a directory and accumulate the total number of windows.
 
@@ -75,4 +79,4 @@ if __name__ == '__main__':
 
     input_dir_path = get_path_from_env('INPUTS_PATH')
 
-    process_files(window_size, window_overlap, input_dir_path)
+    count_windows_in_files(window_size, window_overlap, input_dir_path)

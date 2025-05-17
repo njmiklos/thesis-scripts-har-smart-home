@@ -136,7 +136,7 @@ def summarize_class_stats_from_dataset(annotations_path: Path, inputs_dir: Path,
             print(f'INFO: Processing file {counter}/{no_files} {file_path.name}...')
             sub_df = summarize_class_stats_from_file(file_path)
 
-            if not sub_df.empty:
+            if sub_df is not None and not sub_df.empty:
                 df = pd.merge(df, sub_df, on='annotation', how='left')
             else:
                 print(f'WARNING: {file_path.stem} empty, skipping.')

@@ -40,7 +40,7 @@ def visualize_data_period(input_dir: Path, output_dir: Path, date: str, time_sta
         df = filter_by_date(df, date)
         df = filter_by_time_range(df, time_start, time_end)
 
-        if not df.empty:
+        if df is not None and not df.empty:
             for column in df.columns:
                 if column != 'time':
                     title = f'{str(path.stem)} - {column}'

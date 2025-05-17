@@ -59,7 +59,7 @@ def get_query_result(query: str) -> pd.DataFrame:
     """
     query_result = query_data(query)
     df = convert_query_result_to_dataframe(query_result)
-    if not df.empty:
+    if df is not None and not df.empty:
         df = convert_timestamps_from_iso8601_to_localized_datetime(df, 'time')
     return df
 

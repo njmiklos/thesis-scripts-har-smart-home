@@ -43,7 +43,7 @@ def merge_files_on_time(dataset_path: Path, skip_unannotated: bool = False) -> O
     """
     Merges multiple CSV files from a specified directory into a single DataFrame.
     Each file is processed (including optional removal of rows with 'annotation' equal to 'other'),
-    and the resulting DataFrames are merged on the 'time' and 'annotation' columns using an outer join.
+    and the resulting DataFrames are merged on the 'time' column using an outer join.
 
     Args:
         dataset_path (Path): The directory containing the CSV files.
@@ -70,7 +70,7 @@ def merge_files_on_time(dataset_path: Path, skip_unannotated: bool = False) -> O
 
             counter = counter + 1
         
-        if not final_df.empty:
+        if final_df is not None and not final_df.empty:
             cleaned_df = clean(final_df)
 
             print('INFO: Merging complete.')
@@ -118,7 +118,7 @@ def merge_files_on_time_and_annotation(dataset_path: Path, skip_unannotated: boo
 
             counter = counter + 1
         
-        if not final_df.empty:
+        if final_df is not None and not final_df.empty:
             cleaned_df = clean(final_df)
 
             print('INFO: Merging complete.')
@@ -207,7 +207,7 @@ def clean(df: pd.DataFrame) -> Optional[pd.DataFrame]:
         A new DataFrame with rows containing missing values removed and numeric columns updated
         by rounding infinite values to 13 decimal places.
     """
-    if not df.empty:
+    if df is not None and not df.empty:
         numeric_cols = df.select_dtypes(include=[np.number]).columns
 
         report_missing_and_infinite_values(df, numeric_cols)

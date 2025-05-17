@@ -1,6 +1,19 @@
+"""
+Generates statistical reports from time-series sensor CSV files, including measures of central tendency,
+outlier detection using standard deviations, and sampling rate consistency analysis.
+
+Intended for use in data exploration and quality checking workflows.
+
+Environment Configuration:
+- Set `INPUTS_PATH` in your `.env` file to specify the directory containing input CSV files.
+- Input files must be time-aligned CSVs with a column named 'time' in milliseconds, and numeric data columns.
+- Refer to `README.md` for full setup, usage instructions, and formatting requirements.
+"""
 import logging
 import numpy as np
 import pandas as pd
+
+from pathlib import Path
 
 from data_processing.convert_timestamps import convert_timestamps_from_miliseconds_to_localized_datetime
 from data_analysis.report_utils import count_readings_out_of_range, calculate_thresholds, get_interquartile_range, get_iqr_relative_to_whole_value_range
@@ -12,15 +25,14 @@ from utils.file_handler import read_csv_to_dataframe, get_all_csv_files_in_direc
 
 def report_iqr_values(df: pd.DataFrame, col: str) -> str:
     """
-    Returns the interquartile range (IQR) and its relative proportion of the full range
-    for a specified column in the DataFrame.
+    Calculates and returns the interquartile range (IQR) of a column and its proportion of the total range.
 
     Args:
         df (pd.DataFrame): The input DataFrame.
-        col (str): The name of the column for which the IQR is printed.
+        col (str): The name of the column to analyze.
 
     Returns:
-        str: A summary of results.
+        str: A formatted string summarizing the IQR and its relative size compared to the full value range.
 
     The function calculates the IQR using the `get_interquartile_range` function and
     determines its percentage relative to the full range of the data (max - min). 
@@ -35,6 +47,16 @@ def report_iqr_values(df: pd.DataFrame, col: str) -> str:
     return report
 
 def report_stats(df: pd.DataFrame, col: str) -> str:
+    """
+    Computes basic statistics for a column, including missing/infinite values, min/max, mean, std dev, and IQR.
+
+    Args:
+        df (pd.DataFrame): DataFrame containing the data.
+        col (str): Column to analyze.
+
+    Returns:
+        str: A multi-line string with the statistical summary.
+    """
     report = []
     num_missing = df[col].isna().sum()
     num_infs = np.isinf(df[col]).sum()
@@ -60,16 +82,16 @@ def report_stats(df: pd.DataFrame, col: str) -> str:
 
 def report_outliers(df: pd.DataFrame, col: str, lower_threshold: float, upper_threshold: float) -> str:
     """
-    Prints outliers below and above specified thresholds in a DataFrame column.
+    Identifies and displays outliers that fall outside given lower and upper thresholds.
 
     Args:
         df (pd.DataFrame): The input DataFrame.
-        col (str): The name of the column to check for outliers.
-        lower_threshold (float): The lower threshold value.
-        upper_threshold (float): The upper threshold value.
+        col (str): The name of the column to check.
+        lower_threshold (float): Lower bound for identifying outliers.
+        upper_threshold (float): Upper bound for identifying outliers.
 
     Returns:
-        str: A summary of outliers.
+        str: A report of values below or above the thresholds with timestamps.
     """
     report = []
     values_below = df[df[col] < lower_threshold]
@@ -96,16 +118,15 @@ def report_outliers(df: pd.DataFrame, col: str, lower_threshold: float, upper_th
 
 def report_thresholds(df: pd.DataFrame, col: str, std_dev: float) -> str:
     """
-    Checks thresholds for 1, 2, and 3 standard deviations and counts readings
-    outside these thresholds. Returns the formatted report string.
+    Calculates thresholds for 1 to 3 standard deviations from the mean and reports the count of outliers.
 
     Args:
         df (pd.DataFrame): The input DataFrame.
-        col (str): The column to check thresholds for.
-        std_dev (float): The standard deviation of the column.
+        col (str): The column to analyze.
+        std_dev (float): Precomputed standard deviation of the column.
 
     Returns:
-        str: Formatted threshold report.
+        str: A report summarizing threshold ranges and counts of values outside them.
     """
     report = []
     mean_value = df[col].mean()
@@ -132,15 +153,15 @@ def report_thresholds(df: pd.DataFrame, col: str, std_dev: float) -> str:
 
 def report_sampling_rates(df: pd.DataFrame, col: str, expected_rate: float) -> str:
     """
-    Analyzes the sampling rate and provides statistical details for the given dataframe and column.
-    
+    Reports the actual sampling rate statistics and identifies irregular sampling intervals.
+
     Args:
-        df (pd.DataFrame): Dataframe containing the data to analyze.
-        col (str): Column name to analyze.
+        df (pd.DataFrame): DataFrame with a 'time' column in milliseconds.
+        col (str): The name of the column (used only for context).
         expected_rate (float): Expected sampling rate in seconds.
-    
+
     Returns:
-        str: Formatted threshold report.
+        str: A report summarizing average/median sampling rate and irregular intervals.
     """
     report = []
 
@@ -168,24 +189,13 @@ def report_sampling_rates(df: pd.DataFrame, col: str, expected_rate: float) -> s
 
     return '\n'.join(report)
 
-def process_file(logger: logging.Logger) -> None:
+def report_file(logger: logging.Logger, file_path: Path) -> None:
     """
-    Processes a CSV file by generating statistical reports and visualizations.
-
-    This function reads a CSV file, performs statistical analysis, and generates various plots 
-    (histogram, scatter, timeseries plots) for each column except the 'time' column.
-    The generated plots and reports are saved to the specified output directory.
+    Processes a single CSV file to generate a detailed statistical report for each numeric column.
 
     Args:
-        logger (logging.Logger): Logger instance to log messages and warnings during processing.
-        plots_output_path (Path): Directory path where the generated plots will be saved.
-        file_path (Path): Path to the input CSV file to be processed.
-        timeseries (bool, optional): Whether to generate time series plots. Defaults to True.
-        scatter (bool, optional): Whether to generate scatter plots. Defaults to True.
-        histogram (bool, optional): Whether to generate histogram plots. Defaults to True.
-        sample_size (float, optional): Proportion of the dataset to be used for scatter plots.
-            For example, `0.5` means 50% of the data will be sampled for visualization. 
-            A smaller value (e.g., `0.1`) is recommended for large datasets.
+        logger (logging.Logger): Logger to record messages.
+        file_path (Path): Path to the input CSV file.
 
     Returns:
         None
@@ -193,7 +203,7 @@ def process_file(logger: logging.Logger) -> None:
     report = []
     df = read_csv_to_dataframe(file_path)
 
-    if not df.empty:
+    if df is not None and not df.empty:
         columns = df.columns
         for col in columns:
                 if col != 'time':
@@ -227,18 +237,20 @@ def process_file(logger: logging.Logger) -> None:
         print(f'WARNING: Data is empty for {file_path.name}. Skipping.')
         logger.warning(f'Data is empty for {file_path.name}. Skipping.')
 
+def report_files(input_dir: Path, log_filename: str):
+    """
+    Processes all CSV files in a directory, generating reports and logging the results.
 
-if __name__ == '__main__':
-    base_path = get_path_from_env('BASE_PATH')
+    Args:
+        input_dir (Path): Directory containing input CSV files.
+        log_filename (str): Name of the log file to write output to.
 
-    # Set before running
-    log_filename = 'explore_data_pandas_singles_raw'
-    dataset_path = base_path / 'Raw'
-    sample_size = 1.0   # 100%
-
+    Returns:
+        None
+    """
     logger = get_logger(log_filename)
 
-    file_paths = get_all_csv_files_in_directory(dataset_path)
+    file_paths = get_all_csv_files_in_directory(input_dir)
     no_files = len(file_paths)
     if no_files > 0:
         counter = 1
@@ -246,12 +258,7 @@ if __name__ == '__main__':
             logger.info(f'INFO: Processing file {counter}/{no_files} {file_path.name}.')
             print(f'Processing file {counter}/{no_files} {file_path.name}...')
 
-            if 'motion' in str(file_path.stem):
-                sample_size = 0.1
-            else:
-                sample_size = 0.5
-
-            process_file(logger=logger, file_path=file_path, sample_size=sample_size)
+            report_file(logger=logger, file_path=file_path)
 
             logger.info(f'INFO: Processed file {counter}/{no_files} {file_path.name}')
             counter = counter + 1
@@ -260,3 +267,10 @@ if __name__ == '__main__':
         print(f'Processed all files.')
     else:
         logger.warning(f'No files found in the specified directory.')
+
+
+if __name__ == '__main__':
+    log_filename = 'explore_data_pandas_singles_raw'
+
+    input_dir = get_path_from_env('INPUTS_PATH')
+    report_files(input_dir, log_filename)

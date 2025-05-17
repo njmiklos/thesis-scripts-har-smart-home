@@ -29,7 +29,7 @@ def visualize_columns_from_day(day: str, input_file_path: Path, output_dir: Path
         None
     """
     df = read_csv_to_dataframe(input_file_path)
-    if not df.empty:
+    if df is not None and not df.empty:
         df = filter_by_date(df, day)
         for column in df.columns:
             if column != 'time':
@@ -52,7 +52,7 @@ def visualize_columns(input_file_path: Path, output_dir: Path) -> None:
     """
     df = read_csv_to_dataframe(input_file_path)
     
-    if not df.empty:
+    if df is not None and not df.empty:
         for column in df.columns:
             if column != 'time':
                 success = generate_scatter_plot(df['time'], df[column], f'{column}', 'Date', column, output_dir)

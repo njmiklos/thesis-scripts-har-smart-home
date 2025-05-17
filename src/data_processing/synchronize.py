@@ -36,7 +36,7 @@ def get_global_start_time(files: list) -> pd.Timestamp:
 
     for file_path in files:
         df = read_csv_to_dataframe(file_path)
-        if not df.empty:
+        if df is not None and not df.empty:
             df = convert_timestamps_from_miliseconds_to_localized_datetime(df, 'time')
             file_min_time = df['time'].min()
 
@@ -141,7 +141,7 @@ def process_file(file_path: Path, output_path: Path, frequency: str, global_star
     """
     df = read_csv_to_dataframe(file_path)
 
-    if not df.empty:
+    if df is not None and not df.empty:
         df = convert_timestamps_from_miliseconds_to_localized_datetime(df, 'time')
 
         df = set_time_index(df, 'time')
