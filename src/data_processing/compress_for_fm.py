@@ -14,7 +14,7 @@ from typing import List, Optional
 from pathlib import Path
 
 from utils.get_env import get_path_from_env
-from utils.file_handler import read_csv_to_dataframe, get_all_csv_files_in_directory, check_if_directory_exists
+from utils.file_handler import read_csv_to_dataframe, get_all_csv_files_in_directory, check_if_output_directory_exists
 from data_processing.annotate import determine_true_annotation
 from data_processing.compress import generate_summary
 from data_processing.filter import validate_and_select_columns
@@ -246,6 +246,6 @@ if __name__ == '__main__':
     output_dir_path = get_path_from_env('OUTPUTS_PATH')
     annotations_file_path = get_path_from_env('ANNOTATIONS_FILE_PATH')
 
-    check_if_directory_exists(output_dir_path)
+    check_if_output_directory_exists(output_dir_path)
     compress_files(window_size, window_overlap, time_col_name, annotations_file_path, input_dir_path, output_dir_path, 
                   columns, windows_per_file)

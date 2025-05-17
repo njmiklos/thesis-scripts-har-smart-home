@@ -20,7 +20,7 @@ from typing import List, Optional
 from pathlib import Path
 
 from utils.get_env import get_path_from_env
-from utils.file_handler import read_csv_to_dataframe, get_all_csv_files_in_directory, check_if_directory_exists
+from utils.file_handler import read_csv_to_dataframe, get_all_csv_files_in_directory, check_if_output_directory_exists
 from inference.classify_with_ei_model import load_model, close_loaded_model, classify_window, get_top_prediction
 from inference.evaluate.utils import ClassificationResults, TimeMemoryTracer
 from inference.evaluate.ei_model import (validate_window_size_and_overlap, save_to_json_file, visualize_confusion_matrix, 
@@ -272,6 +272,6 @@ if __name__ == '__main__':
     
     annotations_file_path = get_path_from_env('ANNOTATIONS_FILE_PATH')
 
-    check_if_directory_exists(output_dir_path)
+    check_if_output_directory_exists(output_dir_path)
 
     process_files(window_size, window_overlap, model_file_paths, annotations_file_path, input_dir_path, output_dir_path)

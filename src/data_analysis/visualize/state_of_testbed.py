@@ -1,7 +1,14 @@
 """
-Plots synchronized data from a household to show the state of the environment,
-e.g., during a single activity episode. It compacts the same measurement type 
-from different locations to a single graph.
+This script visualizes synchronized environmental data from CSV logs in a testbed. It processes 
+measurements such as temperature, humidity, luminosity, and motion sensor data to generate 
+time series plots that illustrate the environmental state during activity episodes.
+
+Environment Configuration:
+- Set `INPUTS_PATH` and `OUTPUTS_PATH` in your `.env` file to define where CSV input data is read from and where 
+  visualizations are saved.
+- Input files must be CSVs containing a `time` column and sensor data fields.
+- Measurement columns must follow a naming convention that includes measurement type and optionally the location.
+- Refer to `README.md` for full setup, usage instructions, and formatting requirements.
 """
 import pandas as pd
 
@@ -9,7 +16,7 @@ from pathlib import Path
 from typing import List, Optional
 
 from utils.get_env import get_path_from_env
-from utils.file_handler import read_csv_to_dataframe, get_all_csv_files_in_directory
+from utils.file_handler import read_csv_to_dataframe, get_all_csv_files_in_directory, check_if_output_directory_exists
 from data_analysis.visualize.utils import generate_timeseries_plot
 
 
@@ -83,7 +90,7 @@ def process_multi_location_measurements(df: pd.DataFrame, output_dir: Path,
                                             plot_title=column_name, time_axis_label='Date',
                                             value_axis_label=f'{measurement}', output_dir_path=output_dir)
         
-def process_df(df: pd.DataFrame, output_dir: Path) -> None:
+def plot_locations(df: pd.DataFrame, output_dir: Path) -> None:
     """
     Processes a DataFrame by generating plots for both single-location and multi-location measurements.
 
@@ -102,7 +109,7 @@ def process_df(df: pd.DataFrame, output_dir: Path) -> None:
     process_single_location_measurements(df, output_dir, single_location_measurements)
     process_multi_location_measurements(df, output_dir, multi_location_measurements, locations)
 
-def process_files(input_dir: Path, output_dir: Path) -> None:
+def visualize_state_of_testbed(input_dir: Path, output_dir: Path) -> None:
     """
     Processes all CSV files in the input directory by reading, analyzing, and plotting the data.
 
@@ -126,18 +133,18 @@ def process_files(input_dir: Path, output_dir: Path) -> None:
             episode_output_dir = output_dir / f'{episode_name}'
             episode_output_dir.mkdir(parents=True, exist_ok=True)
 
-            process_df(df, episode_output_dir)
+            plot_locations(df, episode_output_dir)
         except Exception as e:
             print(f'Error processing {file}: {e}')
         counter += 1
 
 
 if __name__ == '__main__':
-    input_path = get_path_from_env('INPUTS_PATH')
-    if not input_path.exists():
-        raise FileNotFoundError(f'Input directory {input_path} does not exist.')
+    input_dir = get_path_from_env('INPUTS_PATH')
+    if not input_dir.exists():
+        raise FileNotFoundError(f'Input directory {input_dir} does not exist.')
     
-    output_path = get_path_from_env('OUTPUTS_PATH')
-    output_path.mkdir(parents=True, exist_ok=True)
+    output_dir = get_path_from_env('OUTPUTS_PATH')
+    check_if_output_directory_exists(output_dir)
 
-    process_files(input_path, output_path)
+    visualize_state_of_testbed(input_dir, output_dir)

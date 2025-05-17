@@ -6,6 +6,8 @@ Each row in the file represents one episode, with the following required columns
 - 'annotation': Activity label (e.g., 'sleeping', 'airing').
 
 The validated and optionally gap-annotated file can be used to annotate sensor data or validate predictions.
+
+Refer to `README.md` for full setup and usage instructions.
 """
 import pandas as pd
 

@@ -5,7 +5,7 @@ from typing import List, Tuple, Optional
 
 from utils.get_env import get_path_from_env
 from utils.file_handler import (read_csv_to_dataframe, save_dataframe_to_csv, 
-                                get_all_csv_files_in_directory, check_if_directory_exists)
+                                get_all_csv_files_in_directory, check_if_output_directory_exists)
 from data_processing.infer.sensor_metadata import infer_unit
 from data_analysis.report_utils import get_quick_stats_dict, get_root_mean_square_error_srs
 from data_analysis.visualize.utils import generate_histogram, generate_scatter_plot, generate_comparative_scatterplots
@@ -355,12 +355,12 @@ if __name__ == "__main__":
     analysis_filename = 'stats_summary.csv'
     analysis_dir = og_dataset_path / 'Analysis'
     analysis_path = analysis_dir / analysis_filename
-    check_if_directory_exists(analysis_dir)
+    check_if_output_directory_exists(analysis_dir)
 
     if mod_dataset_path == og_dataset_path:
         if histogram or scatter:
             graphs_dir = og_dataset_path / 'Graphs'
-            check_if_directory_exists(graphs_dir)
+            check_if_output_directory_exists(graphs_dir)
 
         get_new_table_for_summary(og_dataset_file_paths, og_dataset_path, histogram, scatter,
                                   sampling, sample_size_motion, sample_size_ambient)
@@ -369,10 +369,10 @@ if __name__ == "__main__":
         analysis_filename = f'table_summary_{modification}.csv'
 
         mod_analysis_dir = mod_dataset_path / 'Analysis'
-        check_if_directory_exists(mod_analysis_dir)
+        check_if_output_directory_exists(mod_analysis_dir)
 
         graphs_dir = mod_dataset_path / 'Graphs'
-        check_if_directory_exists(graphs_dir)
+        check_if_output_directory_exists(graphs_dir)
 
         mod_dataset_file_paths = get_all_csv_files_in_directory(mod_dataset_path)
         mod_dataset_file_paths.sort()

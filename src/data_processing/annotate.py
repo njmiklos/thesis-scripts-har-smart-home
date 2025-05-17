@@ -12,7 +12,7 @@ from pathlib import Path
 
 from utils.get_env import get_path_from_env
 from utils.file_handler import (read_csv_to_dataframe, save_dataframe_to_csv, 
-                                get_all_csv_files_in_directory, check_if_directory_exists)
+                                get_all_csv_files_in_directory, check_if_output_directory_exists)
 
 
 def determine_true_annotation(annotations: pd.DataFrame, time: int) -> str:
@@ -86,7 +86,7 @@ if __name__ == '__main__':
     input_dir_path = get_path_from_env('INPUTS_PATH')
     output_dir_path = get_path_from_env('OUTPUTS_PATH')
     path_annotation_file = get_path_from_env('ANNOTATIONS_FILE_PATH')
-    check_if_directory_exists(output_dir_path)
+    check_if_output_directory_exists(output_dir_path)
 
     annotate_data_files(input_dir_path, output_dir_path, path_annotation_file)
     print('Done.')

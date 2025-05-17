@@ -1,10 +1,25 @@
+"""
+This script provides utilities to generate and save visualizations from time series and tabular data. It includes 
+functions for creating histograms, scatter plots, time series plots, heatmaps, and confusion matrices, as well as 
+tools for combining images into a grid.
+
+Environment Configuration:
+- Set `INPUTS_PATH` and `OUTUTS_PATH` in your `.env` file to specify input and output directories.
+- Timestamps are assumed to be in milliseconds and are converted to localized datetime objects.
+- Refer to `README.md` for full setup, usage instructions, and formatting requirements.
+"""
 import pandas as pd
 import numpy as np
 import re
+from PIL import Image
 import matplotlib.pyplot as plt
+import math
+
 from pathlib import Path
+from typing import List
 
 from data_processing.convert_timestamps import convert_timestamps_from_miliseconds_to_localized_datetime_srs
+from utils.get_env import get_path_from_env
 
 
 def create_safe_title(title: str) -> str:
@@ -417,3 +432,95 @@ def generate_confusion_matrix(matrix: np.ndarray, class_names: list[str], output
         plt.close()
         print(f'Error saving confusion matrix: {e}')
         return False
+
+def resize_image(img: Image.Image, scale: float = 0.25) -> Image.Image:
+    """
+    Resizes an image according to the given scale.
+
+    Args:
+        Image.Image: Input image object to be risized.   
+        scale (float): Factor by which to scale down the images.
+
+    Returns:
+        Image.Image: Resized image object.    
+    """
+    return img.resize((int(img.width * scale), int(img.height * scale)))
+
+def load_and_resize_images(image_paths: List[Path], scale: float = 0.25) -> List[Image.Image]:
+    """
+    Loads and resizes a list of image files.
+
+    Args:
+        image_paths (List[Path]): List of image file paths to load.
+        scale (float): Factor by which to scale down the images.
+
+    Returns:
+        List[Image.Image]: List of resized image objects.
+    """
+    images = []
+    for path in image_paths:
+        img = Image.open(path)
+        img = resize_image(img, scale)
+        images.append(img)
+    return images
+
+def arrange_images_into_grid(images: List[Image.Image], no_columns: int = 5) -> Image.Image:
+    """
+    Arranges images into a grid.
+
+    Args:
+        images (List[Image.Image]): List of images to arrange.
+        no_columns (int): Number of columns in the grid.
+
+    Returns:
+        Image.Image: Combined grid image.
+    """
+    rows = math.ceil(len(images) / no_columns)
+    width, height = images[0].size
+    grid_img = Image.new('RGB', (no_columns * width, rows * height), color=(255, 255, 255))
+
+    for idx, img in enumerate(images):
+        x = (idx % no_columns) * width
+        y = (idx // no_columns) * height
+        grid_img.paste(img, (x, y))
+
+    return grid_img
+
+def combine_images_into_grid(input_dir: Path, output_dir: Path, output_filename: str,
+                             no_columns: int, scale: float) -> None:
+    """
+    Processes all image files in the input directory by resizing them and
+    combining them into a grid.
+
+    Args:
+        input_dir (Path): Directory containing input image files.
+        output_dir (Path): Directory to write the output combined image.
+        output_filename (str): Name for the output file of the grid.
+        no_columns (int): Number of columns in the grid.
+        scale (float): Factor by which to scale down the images to save memory.
+    """
+    supported_extensions = ['.jpg', '.jpeg', '.png']
+    image_paths = sorted([p for p in input_dir.glob('*') if p.suffix.lower() in supported_extensions])[:19]
+
+    if not image_paths:
+        raise FileNotFoundError('No image files found in input directory.')
+
+    images = load_and_resize_images(image_paths, scale)
+    grid = arrange_images_into_grid(images, no_columns)
+
+    output_file = output_dir / output_filename
+    grid.save(output_file)
+    print(f'Saved combined image grid to: {output_file}')
+
+
+if __name__ == '__main__':
+    output_filename = 'combined_grid.jpg'
+    no_columns = 5
+    scale = 0.25
+
+    output_dir = get_path_from_env('OUTUTS_PATH')
+    input_dir = get_path_from_env('INPUTS_PATH')
+    if not input_dir.exists():
+        raise FileNotFoundError(f'Input directory {input_dir} does not exist.')
+
+    combine_images_into_grid(input_dir, output_dir, output_filename, no_columns, scale)

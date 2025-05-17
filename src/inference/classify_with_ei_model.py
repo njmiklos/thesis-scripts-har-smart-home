@@ -16,7 +16,7 @@ Environment Configuration:
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Tuple
 
-from utils.file_handler import check_if_directory_exists
+from utils.file_handler import check_if_output_directory_exists
 from utils.get_env import get_path_from_env
 from inference.edge_impulse_runner import ImpulseRunner
 
@@ -148,7 +148,7 @@ if __name__ == '__main__':
     input_dir_path = get_path_from_env('INPUTS_PATH')
     model_file_path = input_dir_path / 'single-model-approach-linux-x86_64-v5.eim'
     output_dir_path = get_path_from_env('OUTPUTS_PATH')
-    check_if_directory_exists(output_dir_path)
+    check_if_output_directory_exists(output_dir_path)
 
     # Some txt window data
     data = '''

@@ -112,7 +112,7 @@ def save_to_json_file(output_dir_path: Path, dictionary: dict, output_file_name:
         dictionary (dict): The dictionary to be saved.
         output_file_name (Optional[str]): Filename for the report, defaults to 'classification_report.json'.
     """
-    check_if_directory_exists(output_dir_path)
+    check_if_output_directory_exists(output_dir_path)
     output_path = output_dir_path / output_file_name
 
     with open(output_path, 'w') as f:
@@ -120,7 +120,7 @@ def save_to_json_file(output_dir_path: Path, dictionary: dict, output_file_name:
     
     print(f'Saved {output_path}.')
 
-def check_if_directory_exists(directory: Path) -> None:
+def check_if_output_directory_exists(directory: Path) -> None:
     """
     Makes sure the specified directory exists, creates it if it does not.
 

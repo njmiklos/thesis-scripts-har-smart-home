@@ -11,7 +11,7 @@ Environment Configuration:
 import pandas as pd
 from pathlib import Path
 
-from utils.file_handler import get_all_csv_files_in_directory, save_dataframe_to_csv, check_if_directory_exists
+from utils.file_handler import get_all_csv_files_in_directory, save_dataframe_to_csv, check_if_output_directory_exists
 from utils.get_env import get_path_from_env
 from data_processing.infer.sensor_metadata import infer_precision
 from data_analysis.report_utils import calculate_thresholds
@@ -138,6 +138,6 @@ if __name__ == '__main__':
 
     input_dir = get_path_from_env('INPUTS_PATH')
     output_dir = get_path_from_env('OUTPUTS_PATH')
-    check_if_directory_exists(output_dir)
+    check_if_output_directory_exists(output_dir)
 
     denoise_files(input_dir, output_dir, window_size_ambient_data, window_size_motion_data, chunk_size)

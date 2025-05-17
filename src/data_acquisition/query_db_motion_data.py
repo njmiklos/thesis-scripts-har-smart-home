@@ -2,12 +2,13 @@
 Queries a running InfluxDB instance for motion sensor data (accelerometer, gyrometer, magnetometer) from a specific device 
 and saves the combined results to a CSV file.
 
-This script is tailored for use with the sensor kit deployed in the TU Chemnitz project.
+This script is tailored for use with the sensor kit deployed in the TU Chemnitz project. 
+Refer to `README.md` for full setup and usage instructions.
 """
 import pandas as pd
 
 from utils.get_env import get_path_from_env
-from utils.file_handler import save_dataframe_to_csv, check_if_directory_exists
+from utils.file_handler import save_dataframe_to_csv, check_if_output_directory_exists
 from data_acquisition.query_db import get_query_result
 
 if __name__ == '__main__':
@@ -15,7 +16,7 @@ if __name__ == '__main__':
     output_filename = f'd{device_no}_motion.csv'
 
     outputs_dir = get_path_from_env('OUTPUTS_PATH')
-    check_if_directory_exists(outputs_dir)
+    check_if_output_directory_exists(outputs_dir)
     path_output_file = outputs_dir / output_filename
     queries = {
         "accelerometer" : f""" 

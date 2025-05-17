@@ -11,7 +11,7 @@ from pathlib import Path
 
 from utils.get_env import get_path_from_env
 from utils.file_handler import (get_all_csv_files_in_directory, read_csv_to_dataframe, 
-                                save_dataframe_to_csv, check_if_directory_exists)
+                                save_dataframe_to_csv, check_if_output_directory_exists)
 from data_processing.convert_timestamps import (convert_timestamps_from_miliseconds_to_localized_datetime, 
                                                 convert_timestamps_from_localized_datetime_to_miliseconds)
 
@@ -196,6 +196,6 @@ if __name__ == '__main__':
 
     input_dir_path = get_path_from_env('INPUTS_PATH')
     output_dir_path = get_path_from_env('OUTPUTS_PATH')
-    check_if_directory_exists(output_dir_path)
+    check_if_output_directory_exists(output_dir_path)
 
     synchronize_files(frequency, input_dir_path, output_dir_path)

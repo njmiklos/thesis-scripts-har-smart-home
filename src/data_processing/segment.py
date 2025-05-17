@@ -13,7 +13,7 @@ from typing import List
 from pathlib import Path
 
 from utils.get_env import get_path_from_env
-from utils.file_handler import read_csv_to_dataframe, save_dataframe_to_csv, check_if_directory_exists
+from utils.file_handler import read_csv_to_dataframe, save_dataframe_to_csv, check_if_output_directory_exists
 from data_processing.infer.metadata import infer_data_collection_days_from_time_column
 from data_processing.filter import filter_by_timestamp, filter_by_date
 
@@ -292,7 +292,7 @@ if __name__ == '__main__':
 
     input_dataset_path = get_path_from_env('INPUTS_PATH') / input_file_name
     output_path = get_path_from_env('OUTPUTS_PATH')
-    check_if_directory_exists(output_path)
+    check_if_output_directory_exists(output_path)
 
     # Read datasets
     dataset_df = read_csv_to_dataframe(input_dataset_path)

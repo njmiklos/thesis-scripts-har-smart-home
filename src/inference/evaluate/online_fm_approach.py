@@ -16,7 +16,7 @@ from typing import List, Optional
 
 from utils.get_env import get_path_from_env
 from utils.file_handler import (save_to_json_file, load_json_file, get_all_json_files_in_directory, 
-                                read_csv_to_dataframe, check_if_directory_exists)
+                                read_csv_to_dataframe, check_if_output_directory_exists)
 from inference.evaluate.utils import ClassificationResults
 from inference.process_windows_with_fm import ExtendedWindow, convert_dict_list_to_window_list
 from inference.evaluate.ei_model import visualize_confusion_matrix
@@ -189,6 +189,6 @@ if __name__ == '__main__':
     input_path = get_path_from_env('INPUTS_PATH')
     annotations_file = get_path_from_env('ANNOTATIONS_FILE_PATH')
     output_dir_path = get_path_from_env('OUTPUTS_PATH')
-    check_if_directory_exists(output_dir_path)
+    check_if_output_directory_exists(output_dir_path)
 
     generate_fm_annotation_report(input_path, annotations_file, output_dir_path, report_filename)

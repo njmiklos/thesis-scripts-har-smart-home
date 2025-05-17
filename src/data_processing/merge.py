@@ -13,9 +13,9 @@ from pathlib import Path
 from typing import Optional
 
 from utils.file_handler import (get_all_csv_files_in_directory, read_csv_to_dataframe, 
-                                check_if_directory_exists, save_dataframe_to_csv)
+                                check_if_output_directory_exists, save_dataframe_to_csv)
 from utils.get_env import get_path_from_env
-from data_analysis.summarize_classes import prefix_column_names_with_device_sensor_function
+from data_analysis.summarize_sensor_stats_by_class import prefix_column_names_with_sensor_metadata
 
 
 def process_file(file_path: Path, skip_unannotated: bool = True) -> pd.DataFrame:
@@ -36,7 +36,7 @@ def process_file(file_path: Path, skip_unannotated: bool = True) -> pd.DataFrame
     if skip_unannotated:
         df = df[df['annotation'] != 'other']
 
-    df = prefix_column_names_with_device_sensor_function(df, file_path)
+    df = prefix_column_names_with_sensor_metadata(df, file_path)
     return df
 
 def merge_files_on_time(dataset_path: Path, skip_unannotated: bool = False) -> Optional[pd.DataFrame]:
@@ -239,6 +239,6 @@ if __name__ == '__main__':
 
     input_dir = get_path_from_env('INPUTS_PATH')
     output_dir = get_path_from_env('OUTPUTS_PATH')
-    check_if_directory_exists(output_dir)
+    check_if_output_directory_exists(output_dir)
 
     merge_and_save_files(input_dir, output_dir, skip_unannotated)

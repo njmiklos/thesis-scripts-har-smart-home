@@ -18,7 +18,7 @@ from pathlib import Path
 from inference.edge_impulse_runner import ImpulseRunner
 from utils.get_env import get_path_from_env
 from utils.file_handler import (read_csv_to_dataframe, get_all_csv_files_in_directory, 
-                                save_to_json_file, check_if_directory_exists)
+                                save_to_json_file, check_if_output_directory_exists)
 from inference.classify_with_ei_model import load_model, close_loaded_model, classify_window, get_top_prediction
 from inference.evaluate.utils import ClassificationResults, TimeMemoryTracer
 from data_processing.annotate import determine_true_annotation
@@ -308,6 +308,6 @@ if __name__ == '__main__':
     model_file_path = get_path_from_env('MODEL_PATH')
     annotations_file_path = get_path_from_env('ANNOTATIONS_FILE_PATH')
 
-    check_if_directory_exists(output_dir_path)
+    check_if_output_directory_exists(output_dir_path)
 
     process_files(window_size, window_overlap, model_file_path, annotations_file_path, input_dir_path, output_dir_path)

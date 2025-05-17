@@ -1,3 +1,11 @@
+"""
+This script provides functions for inferring metadata from time-series datasets, such as data collection dates, 
+class labels, or episode-level statistics.
+
+Environment Configuration:
+- Input must be a DataFrame or CSV file structured with timestamp and/or class label columns.
+- Refer to `README.md` for full setup, usage instructions, and formatting requirements.
+"""
 import pandas as pd
 
 from typing import List
@@ -5,8 +13,8 @@ from pathlib import Path
 
 from data_processing.convert_timestamps import (convert_timestamps_from_miliseconds_to_localized_datetime_srs, 
                                                 convert_timestamps_from_localized_datetime_to_miliseconds_srs)
-from data_analysis.summarize_episodes_counts_and_lenghts import generate_summary_dataframe
-from data_analysis.summarize_classes import process_file
+from data_analysis.summarize_class_durations import generate_and_save_summary_dataframe
+from data_analysis.summarize_sensor_stats_by_class import summarize_class_stats_from_file
 
 
 def infer_data_collection_days_from_time_column(srs: pd.Series) -> List[str]:
@@ -50,7 +58,7 @@ def infer_episodes_counts_and_lenghts(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         pd.DataFrame: Combined summary dataframe.
     """
-    summary_df = generate_summary_dataframe(df)
+    summary_df = generate_and_save_summary_dataframe(df)
     return summary_df
 
 def infer_class_measurements(file_path: Path) -> pd.DataFrame:
@@ -65,5 +73,5 @@ def infer_class_measurements(file_path: Path) -> pd.DataFrame:
     Returns:
         pd.DataFrame: The processed dataframe with aggregated values and updated column names.
     """
-    df = process_file(file_path)
+    df = summarize_class_stats_from_file(file_path)
     return df

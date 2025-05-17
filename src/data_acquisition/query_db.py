@@ -4,6 +4,8 @@ This script provides utilities to query sensor data from a running InfluxDB inst
 It is designed for use in projects involving a specific sensor kit at TU Chemnitz. The script includes functions 
 to formulate queries, retrieve data, convert timestamps, and persist the results. When run directly, it executes 
 a query for a specified device and measurement and writes the results to a CSV file.
+
+Refer to `README.md` for full setup and usage instructions.
 """
 import pandas as pd
 from influxdb import InfluxDBClient
@@ -11,7 +13,7 @@ from typing import Any
 
 from data_processing.convert_timestamps import convert_timestamps_from_iso8601_to_localized_datetime
 from utils.get_env import get_path_from_env, get_database_info
-from utils.file_handler import save_dataframe_to_csv, check_if_directory_exists
+from utils.file_handler import save_dataframe_to_csv, check_if_output_directory_exists
 
 
 def query_data(query: str) -> Any:
@@ -102,7 +104,7 @@ if __name__ == '__main__':
     measurement = 'accelerometer'
     values_col = 'x'
 
-    check_if_directory_exists(outputs_dir)
+    check_if_output_directory_exists(outputs_dir)
     output_filename = f'd{device_no}_{measurement}.csv'
     output_file_path = outputs_dir / output_filename
     query = formulate_query(device_no, measurement, values_col)

@@ -1,3 +1,10 @@
+"""
+This script provides utility functions to infer sensor-related metadata including unit of measurement, 
+expected sampling rate, and expected precision for a given sensor reading. While the mappings are based on our project,
+you can edit them according to your needs.
+
+Refer to `README.md` for full setup, usage instructions, and formatting requirements.
+"""
 def infer_unit(measurement: str) -> str:
     """
     Determines the unit of the given measurement based on predefined mappings for sensor data.

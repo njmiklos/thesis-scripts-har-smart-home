@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import List
 
 from utils.get_env import get_path_from_env
-from utils.file_handler import save_to_json_file, load_json_file, check_if_directory_exists
+from utils.file_handler import save_to_json_file, load_json_file, check_if_output_directory_exists
 from data_processing.compress_for_fm import Window
 from inference.query_fm_api import send_chat_request, get_rate_limits
 from inference.evaluate.utils import TimeMemoryTracer
@@ -200,6 +200,6 @@ if __name__ == '__main__':
 
     input_dir_path = get_path_from_env('INPUTS_PATH')
     output_dir_path = get_path_from_env('OUTPUTS_PATH') / f'stage_{stage}'
-    check_if_directory_exists(output_dir_path)
+    check_if_output_directory_exists(output_dir_path)
 
     process_windows(model_name, input_dir_path, output_dir_path, input_windows_filename, prompt_filename)

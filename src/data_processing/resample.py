@@ -13,7 +13,7 @@ from pathlib import Path
 
 from data_processing.convert_timestamps import (convert_timestamps_from_miliseconds_to_localized_datetime, 
                                                 convert_timestamps_from_localized_datetime_to_miliseconds)
-from utils.file_handler import (save_dataframe_to_csv, get_all_csv_files_in_directory, check_if_directory_exists)
+from utils.file_handler import (save_dataframe_to_csv, get_all_csv_files_in_directory, check_if_output_directory_exists)
 from utils.get_env import get_path_from_env
 from data_processing.infer.sensor_metadata import infer_precision, infer_expected_sampling_rate
 
@@ -210,6 +210,6 @@ if __name__ == '__main__':
 
     input_dir = get_path_from_env('INPUTS_PATH')
     output_dir = get_path_from_env('OUTPUTS_PATH')
-    check_if_directory_exists(output_dir)
+    check_if_output_directory_exists(output_dir)
 
     resample_files(input_dir, output_dir, method, constant, chunk_size, set_sampling_rate_manually, sampling_rate)
