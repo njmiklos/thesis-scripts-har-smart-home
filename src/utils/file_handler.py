@@ -1,3 +1,8 @@
+"""
+This script provides file handling utilities for reading, writing, and managing data files such as CSV and JSON. 
+
+Refer to `README.md` for full setup, usage instructions, and formatting requirements.
+"""
 import pandas as pd
 import json
 

@@ -1,3 +1,14 @@
+"""
+This script sets up a custom logger for individual modules, storing log outputs in a structured log file. 
+It applies different formatting styles based on log levels and ensures each module gets a separate log file 
+under a common logging directory.
+
+Environment Configuration:
+- Set `BASE_PATH` in your `.env` file to define the root project directory.
+- Log files are saved to a `logs/` subdirectory inside the base path with the module name as the filename.
+- Logging includes support for all standard levels: DEBUG, INFO, WARNING, ERROR, and CRITICAL.
+- Refer to `README.md` for full setup, usage instructions, and formatting requirements.
+"""
 import logging
 
 from utils.get_env import get_path_from_env

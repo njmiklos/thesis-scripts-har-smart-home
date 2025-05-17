@@ -1,3 +1,12 @@
+"""
+This script provides functions to retrieve environment-specific variables from a `.env` file. It includes utilities 
+to load and validate paths, database connection details, and external API credentials. Errors are raised if 
+expected values are missing.
+
+Environment Configuration:
+- Ensure a valid `.env` file exists at the project root containing all required variables.
+- Refer to `README.md` for full setup, usage instructions, and formatting requirements.
+"""
 from dotenv import load_dotenv
 import os
 from pathlib import Path
