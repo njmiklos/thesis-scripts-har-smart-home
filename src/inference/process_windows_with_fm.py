@@ -10,7 +10,7 @@ Environment Configuration:
 - Refer to `README.md` for full setup instructions.
 """
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 from utils.get_env import get_path_from_env
 from utils.file_handler import save_to_json_file, load_json_file, check_if_output_directory_exists
@@ -146,7 +146,7 @@ def save_windows(output_dir_path: Path, output_filename: str, windows: List['Ext
     
     print(f'Saved {total_windows} window(s) to file {output_dir_path}/{output_filename}')
 
-def process_windows(model_name: str, input_dir_path: Path, output_dir_path: Path, 
+def process_windows(model_name: str, timeout: Optional[int], input_dir_path: Path, output_dir_path: Path, 
                     input_windows_filename: str, prompt_filename: str) -> None:
     """
     Processes windows saved in a JSON file, and writes a combined result to JSON.
@@ -155,6 +155,8 @@ def process_windows(model_name: str, input_dir_path: Path, output_dir_path: Path
         model_name (str): Model identifier for the FM API. Some options (08.05.2025): 'internvl2.5-8b', 
         'deepseek-r1-distill-llama-70b', 'deepseek-r1', 'llama-3.3-70b-instruct', 'llama-4-scout-17b-16e-instruct', 
         'gemma-3-27b-it'.
+        timeout (Optional[int]): The number of seconds to wait for establishing a connection (should slightly larger 
+            than a multiple of 3). If None is passed, it will wait indefinietly.
         input_dir_path (Path): Path to the directory with input JSON.
         output_dir_path (Path): Path to save annotated window results.
         input_windows_filename (str): Filename of the input JSON.
@@ -172,7 +174,7 @@ def process_windows(model_name: str, input_dir_path: Path, output_dir_path: Path
         print(f'Working on window {counter}/{len(windows)}...')
         resource_tracker = TimeMemoryTracer()
 
-        response = send_chat_request(model=model_name, prompt=prompt, user_message=window.data)
+        response = send_chat_request(model=model_name, timeout=timeout, prompt=prompt, user_message=window.data)
 
         time_ms, max_memory_kb = resource_tracker.stop()
 
@@ -195,11 +197,12 @@ def process_windows(model_name: str, input_dir_path: Path, output_dir_path: Path
 if __name__ == '__main__':
     stage = 1
     model_name = 'gemma-3-27b-it'
-    input_windows_filename = 'compressed_windows_test.json'
+    timeout = None
+    input_windows_filename = 'windows_1.json'
     prompt_filename = f'prompt_stage_{stage}.txt'
 
     input_dir_path = get_path_from_env('INPUTS_PATH')
     output_dir_path = get_path_from_env('OUTPUTS_PATH') / f'stage_{stage}'
     check_if_output_directory_exists(output_dir_path)
 
-    process_windows(model_name, input_dir_path, output_dir_path, input_windows_filename, prompt_filename)
+    process_windows(model_name, timeout, input_dir_path, output_dir_path, input_windows_filename, prompt_filename)
