@@ -136,11 +136,12 @@ def handle_rate_limit(response: requests.Response) -> None:
     Returns:
         None
     """
-    remaining = int(response.headers.get('RateLimit-Remaining', 1))
-    reset = int(response.headers.get('RateLimit-Reset', 1))
-    if remaining <= 2:
-        print(f'Approaching rate limit. Sleeping for {reset + 1} seconds...')
-        time.sleep(reset + 1)
+    if 'RateLimit-Remaining' in response.headers and 'RateLimit-Reset' in response.headers:
+        remaining = int(response.headers['RateLimit-Remaining'])
+        reset = int(response.headers['RateLimit-Reset'])
+        if remaining <= 2:
+            print(f'Approaching rate limit. Sleeping for {reset + 1} seconds...')
+            time.sleep(reset + 1)
 
 def handle_http_error(e: requests.exceptions.HTTPError, attempt: int, max_retries: int, backoff_factor: float) -> bool:
     """
@@ -169,7 +170,7 @@ def handle_http_error(e: requests.exceptions.HTTPError, attempt: int, max_retrie
 
     raise RuntimeError(f'HTTP error {status}: {e.response.text}') from e
 
-def send_chat_request(model: str, prompt: str, user_message: str, image_path: Optional[str] = None,
+def send_chat_request(model: str, timeout: Optional[int], prompt: str, user_message: str, image_path: Optional[str] = None,
                         max_retries: int = 4, backoff_factor: float = 1.0) -> requests.Response:
     """
     Sends a chat request to the API with optional image input.
@@ -178,6 +179,8 @@ def send_chat_request(model: str, prompt: str, user_message: str, image_path: Op
         model (str): The model to use for chat completions. Some options (08.05.2025): 'meta-llama-3.1-8b-instruct',
             'internvl2.5-8b', 'deepseek-r1-distill-llama-70b', 'deepseek-r1', 'llama-3.3-70b-instruct', 
             'llama-4-scout-17b-16e-instruct', 'gemma-3-27b-it'.
+        timeout (Optional[int]): The number of seconds to wait for establishing a connection (should slightly larger 
+            than a multiple of 3). If None is passed, it will wait indefinietly.
         prompt (str): The system prompt to set the behavior of the assistant.
         user_message (str): The user's query.
         image_path (Optional[str]): Optional image file path to include.
@@ -194,7 +197,8 @@ def send_chat_request(model: str, prompt: str, user_message: str, image_path: Op
     attempt = 0
     while True:
         try:
-            response = requests.post(f'{api_config["base_url"]}/chat/completions', headers=headers, json=payload, timeout=120)
+            response = requests.post(f'{api_config["base_url"]}/chat/completions', headers=headers, 
+                                     json=payload, timeout=timeout)
             response.raise_for_status()
             handle_rate_limit(response)
             return response
@@ -263,7 +267,7 @@ def get_request_total_tokens(system_response: requests.Response) -> int:
     exchange_tokens = get_request_token_usage(system_response)
     return exchange_tokens['total_tokens']
 
-def get_rate_limits(system_response: requests.Response) -> Dict[str, int]:
+def get_rate_limits(system_response: requests.Response) -> Optional[Dict[str, int]]:
     """
     Extracts total and remaining rate limits of requests and tokens from response headers.
 
@@ -271,7 +275,8 @@ def get_rate_limits(system_response: requests.Response) -> Dict[str, int]:
         system_response (requests.Response): The HTTP response object.
 
     Returns:
-        Dict[str, int]: A dictionary containing token limits and remaining counts.
+        Optional[Dict[str, int]]: A dictionary containing token limits and remaining counts.
+            If they do not exist, returns None.
     """
     rate_limits = {}
     for key, value in system_response.headers.items():
@@ -298,9 +303,10 @@ def print_usage(system_response: requests.Response) -> None:
     for key, value in tokens.items():
         print(f'- {key}: {value}')
 
-    print('Total rate limits:')
-    for key, value in rate_limits.items():
-        print(f'- {key}: {value}')
+    if rate_limits is not None:
+        print('Total rate limits:')
+        for key, value in rate_limits.items():
+            print(f'- {key}: {value}')
             
 def get_system_message(system_response: requests.Response) -> str:
     """
@@ -339,13 +345,16 @@ def print_formatted_exchange(user_message: str, system_response: requests.Respon
     print(f'System:\n- {get_system_message(system_response)}' )
     print(f'Latency: {get_latency(system_response)}')
     print_usage(system_response)
+    print(f'JSON Response:\n{system_response.json()}')
 
 
 if __name__ == '__main__':
     model = 'meta-llama-3.1-8b-instruct'
+    timeout = None
     image_path = None
     prompt = '''You are a helpful companion.'''
     user_message = '''Tell me a joke.'''
 
-    system_response = send_chat_request(model=model, prompt=prompt, user_message=user_message, image_path=image_path)
+    system_response = send_chat_request(model=model, timeout=timeout, prompt=prompt, user_message=user_message, 
+                                        image_path=image_path)
     print_formatted_exchange(user_message, system_response)
