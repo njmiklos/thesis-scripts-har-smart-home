@@ -6,14 +6,15 @@ Better organization of files and descriptions are coming soon!
 ## 📝 Project Structure
 ```
 📂 thesis-scripts-har-smart-home/
+├── 📁 examples/          # Supplementary materials to the thesis, e.g., example data inputs
+├── 📁 inputs/            # Inputs to be processed or helping in processing (.gitignored)
+├── 📁 outputs/           # Placed for processed files (.gitignored)
 ├── 📁 src/               # Python scripts. Their purpose is explained in the docstring at the top of every file.
 |   ├── 📁 data_acqusition/
 |   ├── 📁 data_analysis/
 |   ├── 📁 data_processing/
 |   ├── 📁 inference/
 │   └── 📁 utils/
-├── 📁 inputs/            # Inputs to be processed or helping in processing (.gitignored)
-├── 📁 outputs/           # Placed for processed files (.gitignored)
 ├── 📄 .env               # Environment variables (.gitignored)
 ├── 📄 LICENSE            # Terms of use
 ├── 📄 README.md          # Project documentation (you are here! Hi!)
