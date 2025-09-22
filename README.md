@@ -1,7 +1,7 @@
 # 🏡📊 MA Thesis Project: Human Activity Recognition with Smart Home Data
-## 📝 Description
+## 📋 Description
 This repository contains the code for my MA thesis on Human Activity Recognition (HAR) using smart home data.
-## 📝 Project Structure
+## 🗂️ Project Structure
 ```
 📂 thesis-scripts-har-smart-home/
 ├── 📁 examples/          # Supplementary materials to the thesis, e.g., example data inputs
@@ -22,7 +22,7 @@ This repository contains the code for my MA thesis on Human Activity Recognition
 This repository covers working with timeseries sensor data in preparation for a model training, including:
 - 📡 Data Acquisition: Communicating with a local InfluxDB instance to collect and save sensor data to .csv files, parsing a file listing annotated acitvity episodes.
 - 📊 Data Analysis: Generating statistical summaries based on annotated episodes, creating scatter plots, timeseries graphs, and histograms from sensor readings, correlating features, combining plots into grids.
-- 🧹 Data Processing: Transforming, resampling, denoising, segmenting, synchronizing, and merging timeseries sensor data, annotating sensor data.
+- 🧹 Data Processing: Transforming, resampling, denoising, segmenting, synchronizing, merging, and annotating sensor data.
 - 🤖 Inference: Predicting annotations for sensor data with deep learning and foundation models, and evaluating their quality against true annotations.
 - 🗃️ Utils: Generic functions for handling files, logging, setting up the working evironment for the project.
 # 🛠️ Usage Instructions
@@ -52,9 +52,9 @@ If you're not familiar with virtual environments, here's a quick guide: A virtua
 - Choose where to store your environments. I like having a dedicated `venvs` directory in my home folder, which you can also create: `mkdir ~/venvs`.
 - Create a virtual environment in the directory called `shproject` (you can choose a different name, it is only meant to mean something to you because you will be using it): `python3 -m venv ~/venvs/shproject`. To work in it, you need to activate it: `source ~/venvs/shproject/bin/activate`. You can see if the environment is active if its name is in the parentheses in front of you username in the terminal, e.g., `(shproject) user@hostname:~$`. When you are done working in the environment, deactivate it with `deactivate` (`(shproject)` will vanish). 
 2. b. Activate the virtual environment.
-3. Optional, recommended: Upgrade pip with `pip install --upgrade pip`.
+3. Optional, recommended: Upgrade pip with `pip install --upgrade pip` within the virtual environment.
 4. Navigate to the project's root directory: `cd thesis-scripts-har-smart-home`.
-5. Install all required packages: `pip install -r requirements.txt`.
+5. Install all required packages within the virtual environment: `pip install -r requirements.txt`.
 6. Optional, recommended: Verify the installation by listing all packages within the virtual environment: `pip list`. The list should match the content of `requirements.txt`.
 ## 4. Create an `.env` File
 To run the scripts, you must create a `.env` file with environment variables for paths and database credentials. The `.env` file is not included in this repository to protect privacy and security.
@@ -112,7 +112,7 @@ _Example_: If I wanted to run `src/inference/classify_with_ei_model.py`, I would
     - Synchronize Data: Align start and end times of all sensor recordings using `data_processing/synchronize.py`.
     - Annotate Data: Add annotations as a new column using `data_processing/annotate.py`.
 5. Data Exploration: Re-analyze your data post-cleaning to ensure no new issues have been introduced. Use scripts in `data_analysis` to visualize or summarize.
-6. Data Correlation:Discover relationships between sensor readings with `data_analysis/correlate_features.py`, and visualize them using tools in `data_analysis/visualize`.
+6. Data Correlation: Discover relationships between sensor readings with `data_analysis/correlate_features.py`, and visualize them using tools in `data_analysis/visualize`.
 7. Data Filtering: Reduce redundancy by removing irrelevant or highly similar features. Use `data_processing/filter.py` to retain only meaningful data for training.
 8. Data Segmentation & Balancing with `data_processing/segment.py`:
     - Segment Data: Split time series into meaningful segments (e.g., per day or per activity).
