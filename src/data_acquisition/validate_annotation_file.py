@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Set
 
 from utils.get_env import get_path_from_env
-from utils.file_handler import read_csv_to_dataframe, save_dataframe_to_csv
+from utils.file_handler import read_csv_to_dataframe, save_dataframe_to_csv, check_if_output_directory_exists
 from data_processing.convert_timestamps import convert_timestamps_from_localized_datetime_to_miliseconds
 
 
@@ -132,7 +132,12 @@ def parse_annotation_file(path_annotation_file: Path, expected_annotations: Set[
 
 
 if __name__ == '__main__':
+    path_annotation_file = get_path_from_env('ANNOTATIONS_FILE_PATH')
+    output_dir_path = get_path_from_env('OUTPUTS_PATH')
     output_filename = 'annotations_combined_with_annotated_gaps.csv'
+    check_if_output_directory_exists(output_dir_path)
+    output_path = get_path_from_env('OUTPUTS_PATH') / output_filename
+
     annotation_for_gaps = '' # If given empty string, gaps between activities will not be included in the annotation file.
     expected_annotations = {
         "airing", "preparing for bed", "sleeping", "getting up", "working out", 
@@ -140,9 +145,6 @@ if __name__ == '__main__':
         "preparing supper", "eating supper", "preparing a drink", "working", "relaxing", 
         "leaving home", "entering home", "preparing a meal", "eating a meal", "other"
     }
-
-    path_annotation_file = get_path_from_env('ANNOTATIONS_FILE_PATH')
-    output_path = get_path_from_env('OUTPUTS_PATH') / output_filename
 
     parse_annotation_file(path_annotation_file, expected_annotations, output_path, annotation_for_gaps)
 
