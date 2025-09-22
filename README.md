@@ -1,8 +1,6 @@
 # 🏡📊 MA Thesis Project: Human Activity Recognition with Smart Home Data
 ## 📝 Description
-This repository contains the code I am developing for my MA thesis on Human Activity Recognition (HAR) using smart home data.
-## 🚧 Status: Work in Progress (WIP)
-Better organization of files and descriptions are coming soon!
+This repository contains the code for my MA thesis on Human Activity Recognition (HAR) using smart home data.
 ## 📝 Project Structure
 ```
 📂 thesis-scripts-har-smart-home/
