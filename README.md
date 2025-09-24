@@ -1,6 +1,6 @@
 # 🏡📊 MA Thesis Project: Human Activity Recognition with Smart Home Data
 ## 📋 Description
-This repository contains the code for my MA thesis on Human Activity Recognition (HAR) using smart home data.
+This repository contains the code for my MA thesis at [Chemnitz University of Technology](https://www.tu-chemnitz.de/index.html.en) on Human Activity Recognition (HAR) using smart home data.
 ## 🗂️ Project Structure
 ```
 📂 thesis-scripts-har-smart-home/
@@ -133,5 +133,5 @@ The repository is licensed under the MIT License. In short, this means:
 - This code is nothing you can't find online, just better documented and less optimized. Feel free to reuse it, modify it, or even train your AI on it.  
 - If you find it helpful and use it in your work, I'd appreciate a shoutout. I like positive ✨ attention ✨
 # ❤️ Acknowledgments
-- Technical University of Chemnitz – Professorship of Media Informatics
+- [Chemnitz University of Technology](https://www.tu-chemnitz.de/index.html.en) – [Professorship of Media Informatics](https://www.tu-chemnitz.de/informatik/mi/index.md.en) 
 - The computing time granted by the Resource Allocation Board and provided on the supercomputer Emmy/Grete at NHR-Nord@Göttingen as part of the NHR infrastructure. My thesis used their hosted FM models with [ChatAI](https://docs.hpc.gwdg.de/services/chat-ai/index.html) and [API](https://docs.hpc.gwdg.de/services/saia/index.html).
